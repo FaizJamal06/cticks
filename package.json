@@ -25,6 +25,11 @@
     "firebase-tools": "15.37.0",
     "typescript": "^5"
   },
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "4.15.9"
+    }
+  },
   "engines": {
     "node": "24.x"
   }
