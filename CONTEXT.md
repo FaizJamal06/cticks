@@ -52,7 +52,8 @@ components/
   Onboard.tsx      "Start a challenge" (rules + your tasks) or "Join with code" (lookup → your tasks)
   Dashboard.tsx    container (Firestore listeners, toggle/nudge actions) + DashboardView (pure UI, props only)
   Sheets.tsx       bottom sheets: Settings (stake, rule, new round, switch, log out) and Edit tasks
-  Banners.tsx      install prompt (Android) + notification setup / iOS "add to home screen" instructions
+  Banners.tsx      per-platform setup: install steps (Android prompt / Firefox / Samsung, iPhone per browser), iOS < 16.4,
+                   notification setup; InAppBanner ("open in Safari/Chrome" + copy link) for WhatsApp/Instagram/etc.
   TaskEditor.tsx   task list editor + RulePicker
   Toasts.tsx       in-app toasts (window "payup-toast" event)
 lib/
@@ -62,9 +63,12 @@ lib/
   firebase.ts      client Firebase init from NEXT_PUBLIC_* env
   admin.ts         server-only firebase-admin init + pushTo(uids, msg) (prunes dead tokens)
   cron.ts          cron auth (CRON_SECRET) + allGroups()
-firestore.rules    security rules: paste into Firebase console → Firestore → Rules
+firestore.rules    security rules: `npx firebase deploy --only firestore:rules` (project in .firebaserc)
+firebase.json      Firestore emulator config + rules path
 scripts/postinstall.mjs   writes icons from scripts/icons.json → public/, copies Firebase compat libs → public/fb/
 tests/logic.test.ts       node:test unit tests for lib/logic.ts (`npm test`)
+tests/rules.test.ts       Firestore rules tests in the emulator (`npm run test:rules`, needs Java 21+)
+.github/workflows/ci.yml  CI: unit tests, rules tests, firebase-admin load check, build
 vercel.json        the two cron schedules
 .claude/skills/    Emil Kowalski's design-engineering skills for Claude Code (animate, review-animations,
                    emil-design-eng, break-ui, …). Use them for UI/motion polish. Update: `npx skills update -p`

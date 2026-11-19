@@ -21,7 +21,7 @@ An accountability app for you and your friends. Each person picks a few daily ta
 1. Go to <https://console.firebase.google.com> → **Add project** (you can turn Analytics off).
 2. **Build → Authentication → Get started → Email/Password → Enable.**
 3. **Build → Firestore Database → Create database** → choose a location near you (e.g. `asia-south1`, Mumbai) → start in **production mode**.
-4. In Firestore open the **Rules** tab, paste in everything from [`firestore.rules`](firestore.rules), and click **Publish**.
+4. Deploy the rules: `npx firebase deploy --only firestore:rules` (or paste [`firestore.rules`](firestore.rules) into Firestore → **Rules** → **Publish**).
 5. **Project settings (⚙) → General → Your apps → Web (`</>`)** → register an app called "Pay Up" (no hosting needed). Copy the config values.
 6. **Project settings → Cloud Messaging → Web Push certificates → Generate key pair.** Copy the key. This is your VAPID key.
 7. **Project settings → Service accounts → Generate new private key.** This downloads a JSON file. Keep it secret and never commit it.
@@ -56,6 +56,7 @@ cp .env.example .env.local   # fill it in
 npm install
 npm run dev                  # http://localhost:3000
 npm test                     # game-logic tests
+npm run test:rules           # Firestore rules in the emulator (needs Java 21+)
 ```
 Push needs HTTPS or localhost. For testing on a real phone, use the Vercel deployment.
 
