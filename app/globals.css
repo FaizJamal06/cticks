@@ -58,7 +58,11 @@ button { cursor: pointer; }
 .progress span { display: block; height: 100%; background: var(--lime); border-radius: 99px; transition: width 0.3s; }
 
 .friend { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.friend > div { min-width: 0; }
+.friend > .btn, .friend > .chip { flex: none; }
 .friend .name { font-size: 20px; font-weight: 700; }
+/* Long names and 60-char tasks wrap inside their box instead of pushing the page sideways (word-break: iOS < 15.4). */
+.txt, .ftask, .feed li, .friend .name, .ledger .big, .ledger .meta, .ledger .row, .toast { word-break: break-word; overflow-wrap: anywhere; }
 .chip { font-family: var(--mono); font-size: 12px; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--mute); white-space: nowrap; }
 .chip.hot { color: var(--bg); background: var(--lime); border-color: var(--lime); }
 .ftask { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; border-top: 1px solid var(--line); }
@@ -69,16 +73,18 @@ button { cursor: pointer; }
 .grid { display: grid; gap: 10px; }
 .grow { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 8px; }
 .grow .who { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cells { display: flex; flex-wrap: wrap; gap: 5px; }
-.cell { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-family: var(--mono); font-size: 11px; font-weight: 600; background: var(--card2); color: var(--mute); }
+/* One row per week; cells shrink below 30px on narrow phones so 7 always fit (a 360px Android used to wrap 6 + 1). */
+.cells, .dayhead { display: grid; grid-template-columns: repeat(7, minmax(0, 30px)); gap: 5px; }
+.cell { aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; font-family: var(--mono); font-size: 11px; font-weight: 600; background: var(--card2); color: var(--mute); }
 .cell.done { background: var(--lime); color: var(--bg); }
 .cell.partial { background: transparent; border: 2px solid var(--amber); color: var(--amber); }
 .cell.miss { background: var(--coral); color: var(--bg); }
 .cell.today { border: 2px dashed var(--ink); color: var(--ink); background: transparent; }
 .cell.today.done { border-style: solid; border-color: var(--lime); background: var(--lime); color: var(--bg); }
 .cell.na { opacity: 0.3; }
-.dayhead { display: flex; gap: 5px; margin-left: 78px; margin-bottom: 2px; }
-.dayhead span { width: 30px; text-align: center; font-family: var(--mono); font-size: 10px; color: var(--mute); }
+.dayhead { margin-left: 78px; margin-bottom: 2px; }
+.dayhead span { text-align: center; font-family: var(--mono); font-size: 10px; color: var(--mute); }
+.dayhead span:nth-child(n+8) { display: none; } /* rows are weeks, so week 1's letters label every row */
 
 .feed { list-style: none; margin: 0; padding: 0; }
 .feed li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
