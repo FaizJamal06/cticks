@@ -66,6 +66,9 @@ firestore.rules    security rules: paste into Firebase console → Firestore →
 scripts/postinstall.mjs   writes icons from scripts/icons.json → public/, copies Firebase compat libs → public/fb/
 tests/logic.test.ts       node:test unit tests for lib/logic.ts (`npm test`)
 vercel.json        the two cron schedules
+.claude/skills/    Emil Kowalski's design-engineering skills for Claude Code (animate, review-animations,
+                   emil-design-eng, break-ui, …). Use them for UI/motion polish. Update: `npx skills update -p`
+skills-lock.json   pins the skill versions (restore with `npx skills install`)
 ```
 
 ## Data model (Firestore)

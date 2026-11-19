@@ -37,6 +37,9 @@ _Last updated: 19 Nov 2026. Update this file whenever something gets done, teste
 - [x] Feed is append-only and you can only post as yourself
 - [x] Push tokens are private (`users/{uid}`)
 
+**Tooling**
+- [x] Emil Kowalski design/animation skills installed for Claude Code (`.claude/skills/`, pinned in `skills-lock.json`). Reviewed: markdown only, no scripts
+
 **Docs**
 - [x] README (setup), CONTEXT.md (architecture/decisions), docs/USER_FLOW.md (flows + every notification), this file
 
