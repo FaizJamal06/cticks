@@ -1,6 +1,7 @@
 "use client";
-import { addDoc, arrayUnion, collection, doc, setDoc } from "firebase/firestore";
-import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
+import { signOut } from "firebase/auth";
+import { addDoc, arrayRemove, arrayUnion, collection, doc, setDoc, updateDoc } from "firebase/firestore";
+import { deleteToken, getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { app, auth, db, VAPID_KEY } from "./firebase";
 import type { FeedItem } from "./feed";
 
@@ -13,6 +14,7 @@ export function toast(msg: string) {
 export const store = {
   get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k: string, v: string) { try { localStorage.setItem(k, v); } catch {} },
+  del(k: string) { try { localStorage.removeItem(k); } catch {} },
 };
 
 // ---------- feed + push ----------
@@ -39,9 +41,33 @@ export const isIOS = () =>
 export const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 
-export type PushState = "loading" | "needs-install" | "unsupported" | "default" | "granted" | "denied";
+export const isAndroid = () => /Android/i.test(navigator.userAgent);
+/** 1604 for iOS 16.4. 9999 when unknown (an iPad in desktop mode reports macOS, and those are new enough). */
+export const iosVersion = () => {
+  const m = navigator.userAgent.match(/OS (\d+)_(\d+)/);
+  return m ? Number(m[1]) * 100 + Number(m[2]) : 9999;
+};
+/** Which browser, for "add to home screen" steps. */
+export function browser(): "chrome" | "edge" | "firefox" | "samsung" | "safari" | "other" {
+  const ua = navigator.userAgent;
+  if (/EdgiOS|EdgA\/|Edg\//.test(ua)) return "edge";
+  if (/FxiOS|Firefox\//.test(ua)) return "firefox";
+  if (/SamsungBrowser/.test(ua)) return "samsung";
+  if (/CriOS|Chrome\//.test(ua)) return "chrome";
+  if (/Safari\//.test(ua)) return "safari";
+  return "other";
+}
+/** Opened inside WhatsApp / Instagram / Facebook / Telegram / LinkedIn / Snapchat etc.: no install, no push there. */
+export const inAppBrowser = () =>
+  !isStandalone() &&
+  (/FBAN|FBAV|FB_IAB|FBIOS|Instagram|WhatsApp|Telegram|LinkedInApp|Snapchat|Line\/|MicroMessenger|musical_ly|TikTok|Twitter|; wv\)/i.test(navigator.userAgent) ||
+    // iOS app webviews drop the "Safari/" token that Safari, Chrome, Edge and Firefox on iPhone all send.
+    (isIOS() && !/Safari\//.test(navigator.userAgent)));
+
+export type PushState = "loading" | "old-ios" | "needs-install" | "unsupported" | "default" | "granted" | "denied";
 
 export async function pushState(): Promise<PushState> {
+  if (isIOS() && iosVersion() < 1604) return "old-ios"; // web push arrived in iOS 16.4
   if (isIOS() && !isStandalone()) return "needs-install";
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !(await isSupported().catch(() => false)))
     return "unsupported";
@@ -72,6 +98,29 @@ export async function enablePush(uid: string): Promise<PushState> {
   if (perm !== "granted") return perm as PushState;
   await saveToken(uid);
   return "granted";
+}
+
+/** This device stops getting pushes for `uid`: token off the user doc, then revoked at FCM. */
+async function forgetDevice(uid: string) {
+  const drop = [store.get("payup.token")];
+  const canPush = app && VAPID_KEY && "Notification" in window && Notification.permission === "granted" && (await isSupported().catch(() => false));
+  const m = canPush ? getMessaging(app!) : null;
+  // getToken with our worker first: it gives this device's current token, and without it deleteToken()
+  // registers Firebase's default worker and revokes the wrong (empty) registration.
+  const current = m ? await getToken(m, { vapidKey: VAPID_KEY, serviceWorkerRegistration: await swRegistration() }).catch(() => null) : null;
+  drop.push(current);
+  const tokens = [...new Set(drop.filter(Boolean) as string[])];
+  if (db && tokens.length) await updateDoc(doc(db, "users", uid), { fcmTokens: arrayRemove(...tokens) });
+  if (m && current) await deleteToken(m);
+}
+
+/** Log out. Switching challenge doesn't call this: you're still logged in, so pushes keep coming. */
+export async function logOut() {
+  const user = auth?.currentUser;
+  // ponytail: capped at 4s so a dead network can't block logout. A token that slips through gets pruned by pushTo() once FCM rejects it.
+  if (user) await Promise.race([forgetDevice(user.uid), new Promise((r) => setTimeout(r, 4000))]).catch(() => {});
+  store.del("payup.token");
+  if (auth) await signOut(auth);
 }
 
 /** While the app is open, server reminders arrive here instead of the system tray. */

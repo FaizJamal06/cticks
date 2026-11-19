@@ -7,6 +7,7 @@ import Auth from "./Auth";
 import Onboard from "./Onboard";
 import Dashboard from "./Dashboard";
 import Toasts from "./Toasts";
+import { InAppBanner } from "./Banners";
 
 type Profile = { name?: string; groupId?: string | null };
 
@@ -38,6 +39,7 @@ export default function App() {
 
   return (
     <>
+      <InAppBanner />
       {view}
       <Toasts />
     </>

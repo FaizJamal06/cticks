@@ -1,10 +1,9 @@
 "use client";
 import { useState } from "react";
-import { signOut } from "firebase/auth";
 import { deleteField, doc, setDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { addDays, dayKey, type Group, type Rule, type Task } from "@/lib/logic";
-import { authError, postFeed, toast } from "@/lib/client";
+import { authError, logOut, postFeed, toast } from "@/lib/client";
 import TaskEditor, { cleanTasks, RulePicker } from "./TaskEditor";
 
 function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -124,7 +123,7 @@ export function SettingsSheet({ group, gid, uid, phase, onClose }: {
           if (!db) return;
           await setDoc(doc(db, "users", uid), { groupId: deleteField() }, { merge: true });
         }}>Switch challenge</button>
-        <button className="btn ghost" onClick={() => auth && signOut(auth)}>Log out</button>
+        <button className="btn ghost" onClick={logOut}>Log out</button>
       </div>
     </Sheet>
   );

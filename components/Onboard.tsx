@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
-import { signOut } from "firebase/auth";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { addDays, dayKey, inr, prettyDay, ruleLabel, type Group, type Rule } from "@/lib/logic";
-import { authError, newCode, postFeed } from "@/lib/client";
+import { authError, logOut, newCode, postFeed } from "@/lib/client";
 import TaskEditor, { blankTasks, cleanTasks, RulePicker } from "./TaskEditor";
 
 export default function Onboard({ user, name }: { user: User; name: string }) {
@@ -95,7 +94,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
           <h1 className="logo">PAY UP<i>.</i></h1>
           <div className="sub">hey {name || "there"}, let&apos;s set this up</div>
         </div>
-        <button className="iconbtn" aria-label="Log out" onClick={() => auth && signOut(auth)}>⎋</button>
+        <button className="iconbtn" aria-label="Log out" onClick={logOut}>⎋</button>
       </div>
 
       <div className="tabs">
