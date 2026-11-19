@@ -30,6 +30,9 @@ const anon = () => env.unauthenticatedContext().firestore();
 type DB = ReturnType<typeof anon>;
 const seed = (fn: (db: DB) => Promise<unknown>) => env.withSecurityRulesDisabled((ctx) => fn(ctx.firestore()).then(() => {}));
 const setMembers = (members: string[]) => seed((db) => updateDoc(doc(db, `groups/${G}`), { members }));
+// In these helpers `undefined` means "field missing": left out on create, deleted on update.
+const forCreate = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+const forUpdate = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v === undefined ? deleteField() : v]));
 
 before(async () => {
   setLogLevel("silent"); // denied writes are expected here; don't log each one
@@ -156,6 +159,72 @@ describe("players/{uid}", () => {
   });
   test("non-members can't create a player doc", () => assertFails(setDoc(p("carol", "carol"), playerDoc("carol"))));
   test("delete is denied", () => assertFails(deleteDoc(p("alice", "alice"))));
+});
+
+describe("players: joined, uid and tasks can't be used to dodge misses", () => {
+  const tasks = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `t${i}`, text: `task ${i}` }));
+  const create = (over: Record<string, unknown>) => setDoc(doc(as("carol"), `groups/${G}/players/carol`), forCreate({ ...playerDoc("carol"), ...over }));
+  const mine = () => doc(as("alice"), `groups/${G}/players/alice`);
+  beforeEach(() => setMembers(["alice", "bob", "carol"]));
+
+  test("create: joined can't be in the future; today or earlier is fine", async () => {
+    await assertFails(create({ joined: TOMORROW }));
+    await assertFails(create({ joined: "2099-01-01" }));
+    await assertFails(create({ joined: 20261119 }));
+    await assertFails(create({ joined: undefined }));
+    await assertSucceeds(create({ joined: YESTERDAY }));
+  });
+  test("create: uid must be your own", () => assertFails(create({ uid: "alice" })));
+  test("create: 1–8 tasks", async () => {
+    await assertFails(create({ tasks: [] }));
+    await assertFails(create({ tasks: tasks(9) }));
+    await assertFails(create({ tasks: "gym" }));
+    await assertFails(create({ tasks: undefined }));
+    await assertSucceeds(create({ tasks: tasks(8) }));
+  });
+  test("create: 1 task is the minimum", () => assertSucceeds(create({ tasks: tasks(1) })));
+  test("update: joined is locked", async () => {
+    await assertFails(updateDoc(mine(), { joined: "2099-01-01" }));
+    await assertFails(updateDoc(mine(), { joined: YESTERDAY }));
+    await assertFails(updateDoc(mine(), { joined: deleteField() }));
+  });
+  test("update: uid is locked", async () => {
+    await assertFails(updateDoc(mine(), { uid: "bob" }));
+    await assertFails(updateDoc(mine(), { uid: deleteField() }));
+  });
+  test("update: 1–8 tasks", async () => {
+    await assertFails(updateDoc(mine(), { tasks: [] }));
+    await assertFails(updateDoc(mine(), { tasks: tasks(9) }));
+    await assertFails(updateDoc(mine(), { tasks: deleteField() }));
+    await assertSucceeds(updateDoc(mine(), { tasks: tasks(1) }));
+    await assertSucceeds(updateDoc(mine(), { tasks: tasks(8) }));
+  });
+});
+
+describe("groups: stake, rule, days and round must be valid", () => {
+  const create = (over: Record<string, unknown>) =>
+    setDoc(doc(as("carol"), "groups/NEW234"), forCreate({ ...groupDoc(["carol"]), code: "NEW234", ...over }));
+  const edit = (over: Record<string, unknown>) => updateDoc(doc(as("bob"), `groups/${G}`), forUpdate(over));
+  const bad: Record<string, unknown>[] = [
+    { stake: -5 }, { stake: 100001 }, { stake: "abc" }, { stake: null },
+    { rule: "some" }, { rule: "" }, { days: 10 }, { days: "7" }, { days: 0 },
+    { round: 1.5 }, { round: "1" }, { round: undefined }, { stake: undefined },
+  ];
+  test("create: bad values are denied", async () => {
+    for (const b of bad) await assertFails(create(b));
+  });
+  test("create: every allowed value works", async () => {
+    for (const days of [7, 14, 21, 30]) await assertSucceeds(create({ days }));
+    await assertSucceeds(create({ stake: 100000, rule: "none" }));
+    await assertSucceeds(create({ stake: 1 }));
+  });
+  test("update: bad values are denied", async () => {
+    for (const b of bad) await assertFails(edit(b));
+  });
+  test("update: valid edits still work", async () => {
+    await assertSucceeds(edit({ stake: 100000, rule: "none" }));
+    await assertSucceeds(edit({ days: 30, round: 2, start: TOMORROW }));
+  });
 });
 
 describe("checks: only today's key (IST) can change", () => {

@@ -14,6 +14,16 @@ service cloud.firestore {
       return string(t.year()) + '-' + pad(t.month()) + '-' + pad(t.day());
     }
 
+    // Group settings the ledger depends on. A bad stake shows ₹NaN; a bad rule/days breaks scoring.
+    function validGroup(d) {
+      return d.stake is number && d.stake > 0 && d.stake <= 100000
+        && d.rule in ['all', 'none']
+        && d.days in [7, 14, 21, 30]
+        && d.round is int;
+    }
+    // 1–8 tasks. Zero tasks would mean isMiss() is always false: a player who can never owe.
+    function validTasks(d) { return d.tasks is list && d.tasks.size() >= 1 && d.tasks.size() <= 8; }
+
     // Your own profile + push tokens. Only you (and the server) can see them.
     match /users/{uid} {
       allow read, write: if signedIn() && me() == uid;
@@ -27,9 +37,9 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.members == [me()]
         && request.resource.data.createdBy == me()
-        && request.resource.data.stake is number && request.resource.data.stake > 0;
+        && validGroup(request.resource.data);
 
-      allow update: if
+      allow update: if validGroup(request.resource.data) && (
         // members can change stake / rule / rounds, but not who's in the group
         (isMember(gid) && request.resource.data.members == resource.data.members
           && request.resource.data.createdBy == resource.data.createdBy)
@@ -37,17 +47,23 @@ service cloud.firestore {
         || (signedIn() && !(me() in resource.data.members)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
           && request.resource.data.members == resource.data.members.concat([me()])
-          && resource.data.members.size() < 6);
+          && resource.data.members.size() < 6));
 
       allow delete: if false;
 
       // Each player's tasks + ticks. Everyone in the group reads; ONLY you write yours,
       // and only today's ticks can change — no backfilling yesterday.
+      // `joined` can't be in the future (days before it never count) and never changes after.
       match /players/{uid} {
         allow read: if isMember(gid);
         allow create: if isMember(gid) && me() == uid
-          && request.resource.data.checks == {};
+          && request.resource.data.uid == uid
+          && request.resource.data.checks == {}
+          && request.resource.data.joined is string && request.resource.data.joined <= istToday()
+          && validTasks(request.resource.data);
         allow update: if isMember(gid) && me() == uid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['joined', 'uid'])
+          && validTasks(request.resource.data)
           && request.resource.data.get('checks', {}).diff(resource.data.get('checks', {})).affectedKeys().hasOnly([istToday()]);
         allow delete: if false;
       }
