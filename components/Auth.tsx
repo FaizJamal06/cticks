@@ -23,8 +23,10 @@ export default function Auth() {
       if (mode === "signup") {
         if (!name.trim()) throw new Error("Add your name so your friend knows it's you.");
         const cred = await createUserWithEmailAndPassword(auth, email.trim(), pw);
-        await updateProfile(cred.user, { displayName: name.trim() });
+        // Name goes to Firestore first: the local write is instant, so Onboard has it before it can submit.
+        // (updateProfile is a network round trip; a fast tap on Join used to save name "".)
         await setDoc(doc(db, "users", cred.user.uid), { name: name.trim() }, { merge: true });
+        await updateProfile(cred.user, { displayName: name.trim() });
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), pw);
       }
