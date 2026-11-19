@@ -1,0 +1,10 @@
+node_modules
+.next
+.env*.local
+.env
+public/fb
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+service-account*.json
+public/*.png

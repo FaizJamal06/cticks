@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function group(gid) { return get(/databases/$(database)/documents/groups/$(gid)).data; }
+    function isMember(gid) { return signedIn() && me() in group(gid).members; }
+
+    // Today's date in India time, as "YYYY-MM-DD" — the only day you're allowed to tick.
+    function pad(n) { return n < 10 ? '0' + string(n) : string(n); }
+    function istToday() {
+      let t = request.time + duration.value(330, 'm');
+      return string(t.year()) + '-' + pad(t.month()) + '-' + pad(t.day());
+    }
+
+    // Your own profile + push tokens. Only you (and the server) can see them.
+    match /users/{uid} {
+      allow read, write: if signedIn() && me() == uid;
+    }
+
+    match /groups/{gid} {
+      // Anyone signed in can look up a group by its invite code (the doc id), never list them.
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if signedIn()
+        && request.resource.data.members == [me()]
+        && request.resource.data.createdBy == me()
+        && request.resource.data.stake is number && request.resource.data.stake > 0;
+
+      allow update: if
+        // members can change stake / rule / rounds, but not who's in the group
+        (isMember(gid) && request.resource.data.members == resource.data.members
+          && request.resource.data.createdBy == resource.data.createdBy)
+        // someone with the code can add exactly themselves (max 6 people)
+        || (signedIn() && !(me() in resource.data.members)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+          && request.resource.data.members == resource.data.members.concat([me()])
+          && resource.data.members.size() < 6);
+
+      allow delete: if false;
+
+      // Each player's tasks + ticks. Everyone in the group reads; ONLY you write yours,
+      // and only today's ticks can change — no backfilling yesterday.
+      match /players/{uid} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && me() == uid
+          && request.resource.data.checks == {};
+        allow update: if isMember(gid) && me() == uid
+          && request.resource.data.get('checks', {}).diff(resource.data.get('checks', {})).affectedKeys().hasOnly([istToday()]);
+        allow delete: if false;
+      }
+
+      // Activity feed. Append-only, and you can only post as yourself.
+      match /feed/{fid} {
+        allow read: if isMember(gid);
+        allow create: if isMember(gid) && request.resource.data.by == me();
+        allow update, delete: if false;
+      }
+    }
+  }
+}
