@@ -8,3 +8,5 @@ next-env.d.ts
 .vercel
 service-account*.json
 public/*.png
+*firebase-adminsdk*.json
+*-debug.log
