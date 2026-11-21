@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { addDays, dayKey, inr, prettyDay, ruleLabel, type Group, type Rule } from "@/lib/logic";
 import { authError, logOut, newCode, postFeed } from "@/lib/client";
 import TaskEditor, { blankTasks, cleanTasks, RulePicker } from "./TaskEditor";
+import { Logo } from "./Tik";
 
 export default function Onboard({ user, name }: { user: User; name: string }) {
   const [mode, setMode] = useState<"create" | "join">("create");
@@ -23,6 +24,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
     let c: string | null = null;
     try { c = sessionStorage.getItem("payup.join"); } catch {}
     if (c) { setMode("join"); setCode(c); lookup(c); }
+    else if (new URLSearchParams(location.search).get("tab") === "join") setMode("join"); // "I have an invite code"
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,7 +93,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
     <div className="wrap">
       <div className="top">
         <div>
-          <h1 className="logo">PAY UP<i>.</i></h1>
+          <h1 className="logo"><Logo /></h1>
           <div className="sub">hey {name || "there"}, let&apos;s set this up</div>
         </div>
         <button className="iconbtn" aria-label="Log out" onClick={logOut}>⎋</button>

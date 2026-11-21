@@ -6,9 +6,12 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { authError, toast } from "@/lib/client";
+import { Logo } from "./Tik";
 
 export default function Auth() {
-  const [mode, setMode] = useState<"signup" | "login">("signup");
+  // /login and /signup land here as /app?mode=…; only rendered in the browser, so reading location is safe.
+  const [mode, setMode] = useState<"signup" | "login">(() =>
+    new URLSearchParams(location.search).get("mode") === "login" ? "login" : "signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -46,8 +49,8 @@ export default function Auth() {
 
   return (
     <div className="wrap hero">
-      <h1 className="logo">PAY<br />UP<i>.</i></h1>
-      <p>Pick your daily tasks. Tick them off. Miss a day and you pay your friend. Simple.</p>
+      <h1 className="logo"><Logo /></h1>
+      <p>Pick your daily tasks. Tick them off before midnight. Miss a day and you pay your friend. Simple.</p>
 
       <div className="tabs" role="tablist">
         <button className={mode === "signup" ? "on" : ""} onClick={() => setMode("signup")}>Sign up</button>

@@ -4,10 +4,12 @@ import { addDoc, arrayRemove, arrayUnion, collection, doc, setDoc, updateDoc } f
 import { deleteToken, getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { app, auth, db, VAPID_KEY } from "./firebase";
 import type { FeedItem } from "./feed";
+import type { Mood } from "./tik";
 
 // ---------- toasts ----------
-export function toast(msg: string) {
-  window.dispatchEvent(new CustomEvent("payup-toast", { detail: msg }));
+/** Shows an in-app toast. `mood` adds a small Tik where it fits. */
+export function toast(msg: string, mood?: Mood) {
+  window.dispatchEvent(new CustomEvent("payup-toast", { detail: { msg, mood } }));
 }
 
 // ---------- local storage (never required) ----------
@@ -128,7 +130,8 @@ export async function listenForeground() {
   if (!app || !(await isSupported().catch(() => false))) return () => {};
   return onMessage(getMessaging(app), (p) => {
     const kind = p.data?.kind;
-    if (kind === "reminder" || kind === "results") toast(`${p.notification?.title ?? ""} — ${p.notification?.body ?? ""}`);
+    if (kind === "reminder" || kind === "results")
+      toast(`${p.notification?.title ?? ""}: ${p.notification?.body ?? ""}`, kind === "reminder" ? "ticking" : "collector");
   });
 }
 

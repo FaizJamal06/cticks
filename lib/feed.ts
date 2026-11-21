@@ -58,7 +58,7 @@ export function feedPush(f: FeedItem, name: (uid: string) => string, stake: numb
     case "nudge":
       return { title: `👀 ${who} nudged you`, body: `${plural(num(f.open), "task")} still open today. ${inr(stake)} on the line.` };
     case "join":
-      return { title: `${who} joined Pay Up`, body: `${plural(total, "task")} locked in. Game on.` };
+      return { title: `${who} joined cTicks`, body: `${plural(total, "task")} locked in. Game on.` };
     case "tasks":
       return { title: `${who} changed their tasks`, body: `Now ${plural(total, "task")}. Check what they picked.` };
     case "settings":

@@ -13,6 +13,7 @@ import { feedLine, type FeedItem } from "@/lib/feed";
 import { authError, listenForeground, postFeed, store, toast } from "@/lib/client";
 import { EditTasksSheet, SettingsSheet } from "./Sheets";
 import Banners from "./Banners";
+import Tik, { Logo } from "./Tik";
 
 const ago = (ts: number) => {
   const m = Math.floor((Date.now() - ts) / 60000);
@@ -91,7 +92,7 @@ export default function Dashboard({ user, gid }: { user: User; gid: string }) {
     if (Date.now() - last < 30 * 60_000) return toast(`You nudged ${p.name} recently. Give them a sec.`);
     store.set(key, String(Date.now()));
     await postFeed(gid, { kind: "nudge", to: p.uid, open: openTasks(p, today).length });
-    toast(`Nudged ${p.name} 👀`);
+    toast(`Nudged ${p.name} 👀`, "nudge");
   }
 
   return (
@@ -131,7 +132,7 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
   const net = mine.reduce((s, d) => s + (d.to === uid ? d.amount : -d.amount), 0);
   const final = st.phase === "over" ? "Final: " : "";
   let headline: React.ReactNode;
-  if (!others.length) headline = <div className="big">Waiting for your friend</div>;
+  if (!others.length) headline = <div className="big tik-row"><Tik mood="sleeping" size={44} />Waiting for your friend</div>;
   else if (others.length === 1) {
     const o = others[0];
     headline = net > 0 ? <div className="big win">{final}{o.name} owes you {inr(net)}</div>
@@ -149,7 +150,7 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
     <div className="wrap">
       <div className="top">
         <div>
-          <h1 className="logo">PAY UP<i>.</i></h1>
+          <h1 className="logo"><Logo /></h1>
           <div className="sub">{sub}</div>
         </div>
         <button className="iconbtn" aria-label="Settings" onClick={() => onSheet("settings")}>⚙</button>
@@ -162,9 +163,9 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
           <b>Invite your friend.</b> Send them this code, or tap share. They sign up and enter it.
           <div className="code">{group.code}</div>
           <button className="btn small" onClick={async () => {
-            const url = `${location.origin}/?join=${group.code}`;
-            const text = `I'm putting money on it. Join my Pay Up challenge: code ${group.code}`;
-            try { if (navigator.share) await navigator.share({ title: "Pay Up", text, url }); else { await navigator.clipboard.writeText(`${text}\n${url}`); toast("Invite copied"); } } catch {}
+            const url = `${location.origin}/?join=${group.code}&from=${encodeURIComponent(me.name)}`;
+            const text = `I'm putting money on it. Join my cTicks challenge: code ${group.code}`;
+            try { if (navigator.share) await navigator.share({ title: "cTicks", text, url }); else { await navigator.clipboard.writeText(`${text}\n${url}`); toast("Invite copied"); } } catch {}
           }}>Share invite</button>
         </div>
       )}
@@ -181,9 +182,10 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
         {others.length > 1 && debts.map((d, i) => (
           <div className="row" key={i}><span>{name(d.from)} → {name(d.to)}</span><b>{inr(d.amount)}</b></div>
         ))}
-        {st.phase === "over" && (
+        {st.phase === "over" && <>
+          <div className="note tik-row"><Tik mood="collector" size={40} />Round&apos;s done. Settle up on UPI, then go again.</div>
           <button className="btn" style={{ marginTop: 14 }} onClick={() => onSheet("settings")}>Start the next round</button>
-        )}
+        </>}
       </div>
 
       {/* ---- my tasks today ---- */}
@@ -202,11 +204,14 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
             </button>
           );
         })}
-        <div className="note">
-          {st.phase === "upcoming" ? `Ticks start counting ${prettyDay(group.start)}. You can still change your tasks.`
-            : st.phase === "over" ? "Round's over. Start a new one from settings."
-            : `A miss = ${ruleLabel(group.rule)}. Only today can be ticked, so no backfilling.`}
-          {canEditTasks && <> <a href="#" onClick={(e) => { e.preventDefault(); onSheet("tasks"); }} style={{ color: "var(--lime)" }}>Edit tasks</a></>}
+        <div className={`note${st.phase === "upcoming" ? " tik-row" : ""}`}>
+          {st.phase === "upcoming" && <Tik mood="sleeping" size={32} />}
+          <span>
+            {st.phase === "upcoming" ? `Ticks start counting ${prettyDay(group.start)}. You can still change your tasks.`
+              : st.phase === "over" ? "Round's over. Start a new one from settings."
+              : `A miss = ${ruleLabel(group.rule)}. Only today can be ticked, so no backfilling.`}
+            {canEditTasks && <> <a href="#" onClick={(e) => { e.preventDefault(); onSheet("tasks"); }} style={{ color: "var(--lime)" }}>Edit tasks</a></>}
+          </span>
         </div>
       </div>
 
@@ -263,7 +268,7 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
       {/* ---- activity ---- */}
       <div className="card">
         <h2>Activity {newCount > 0 && <span className="chip hot">{newCount} new</span>}</h2>
-        {feed.length === 0 ? <div className="note" style={{ marginTop: 0 }}>Nothing yet. Tick something.</div> : (
+        {feed.length === 0 ? <div className="note tik-row" style={{ marginTop: 0 }}><Tik mood="sleeping" size={32} />Nothing yet. Tick something.</div> : (
           <ul className="feed">
             {feed.slice(0, 30).map((f) => (
               <li key={f.id} className={f.by !== uid && f.ts > lastSeen ? "new" : ""}>

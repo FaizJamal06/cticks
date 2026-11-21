@@ -16,13 +16,16 @@ html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: v
 body { min-height: 100dvh; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
+button, a { touch-action: manipulation; }
+button { user-select: none; -webkit-user-select: none; }
 
 .wrap {
   max-width: 560px; margin: 0 auto;
   padding: calc(18px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
 }
 .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.logo { font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 0.95; margin: 0; }
+.logo { font-size: 40px; font-weight: 700; letter-spacing: -0.045em; line-height: 0.95; margin: 0; display: flex; align-items: center; gap: 0.16em; color: var(--ink); }
+.logo .tik { width: 0.86em !important; height: 0.86em !important; }
 .logo i { color: var(--lime); font-style: normal; }
 .sub { color: var(--mute); font-family: var(--mono); font-size: 12px; margin-top: 8px; line-height: 1.5; }
 .iconbtn {
@@ -139,6 +142,10 @@ label.f { display: block; margin-top: 14px; font-size: 13px; color: var(--mute);
 .sheet h3 { margin: 0 0 4px; font-size: 22px; }
 
 .toasts { position: fixed; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 8px; z-index: 60; pointer-events: none; padding: 0 16px; }
-.toast { background: var(--lime); color: var(--bg); padding: 12px 16px; border-radius: 14px; font-weight: 600; font-size: 15px; max-width: 520px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); animation: up 0.25s ease-out; }
+.tik { display: inline-block; flex: none; line-height: 0; }
+.tik svg { display: block; width: 100%; height: 100%; }
+.tik-row { display: flex; align-items: center; gap: 10px; }
+.toast .tik { background: var(--bg); border-radius: 8px; padding: 3px; box-sizing: content-box; }
+.toast { display: flex; align-items: center; gap: 10px; background: var(--lime); color: var(--bg); padding: 12px 16px; border-radius: 14px; font-weight: 600; font-size: 15px; max-width: 520px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); animation: up 0.25s ease-out; }
 @keyframes up { from { transform: translateY(20px); opacity: 0; } }
 .center { min-height: 60dvh; display: grid; place-items: center; color: var(--mute); font-family: var(--mono); }
