@@ -1,15 +1,17 @@
-# Pay Up 💸
+# cTicks ✓
 
-An accountability app for you and your friends. Each person picks a few daily tasks. Tick them off every day. Miss a day and you owe everyone else the stake. It's an installable app (PWA) that sends real push notifications to Android and iPhone.
+*Tick it or pay for it.* (Formerly Pay Up.) An accountability app for you and your friends. Each person picks a few daily tasks. Tick them off every day. Miss a day and you owe everyone else the stake. It's an installable app (PWA) that sends real push notifications to Android and iPhone.
 
-- **Live ticks**: your friend gets a push the moment you finish a task ("Faiz is on the board: Gym (1/3)") and when you clear the day.
+- **Live ticks**: your friend gets a push the moment you finish a task ("Faiz is on the board · First task done: Gym (1/3)") and when you clear the day.
 - **Nudges**: poke someone who still has tasks open.
 - **9pm warning**: a push if you're about to miss today, saying how much you'd owe.
 - **9am results**: who missed yesterday and the running total. At the end of a round, the final settle-up.
 - **No cheating**: you can only tick *your own* tasks, and only *today's* (India time). Both are enforced by Firestore security rules, not just the UI.
 - Two rules to choose from: *finish every task*, or *do at least one*. Pick 7/14/21/30-day rounds, up to 6 people.
 
-**Docs:** [CONTEXT.md](CONTEXT.md) (architecture and decisions) · [STATUS.md](STATUS.md) (done / tested / to do) · [docs/USER_FLOW.md](docs/USER_FLOW.md) (screens and notifications)
+**Docs:** [CONTEXT.md](CONTEXT.md) (architecture and decisions) · [STATUS.md](STATUS.md) (done / tested / to do) · [docs/USER_FLOW.md](docs/USER_FLOW.md) (screens and notifications) · [docs/BRAND.md](docs/BRAND.md) (name, Tik the mascot, voice) · [docs/WEBSITE_COPY.md](docs/WEBSITE_COPY.md) (landing page copy)
+
+The landing page is at `/`, the app at `/app`.
 
 **Stack:** Next.js 16 (App Router) on Vercel · Firebase Auth + Firestore (realtime) · Firebase Cloud Messaging (web push) · Vercel Cron.
 
@@ -22,7 +24,7 @@ An accountability app for you and your friends. Each person picks a few daily ta
 2. **Build → Authentication → Get started → Email/Password → Enable.**
 3. **Build → Firestore Database → Create database** → choose a location near you (e.g. `asia-south1`, Mumbai) → start in **production mode**.
 4. Deploy the rules: `npx firebase deploy --only firestore:rules` (or paste [`firestore.rules`](firestore.rules) into Firestore → **Rules** → **Publish**).
-5. **Project settings (⚙) → General → Your apps → Web (`</>`)** → register an app called "Pay Up" (no hosting needed). Copy the config values.
+5. **Project settings (⚙) → General → Your apps → Web (`</>`)** → register an app called "cTicks" (no hosting needed). Copy the config values.
 6. **Project settings → Cloud Messaging → Web Push certificates → Generate key pair.** Copy the key. This is your VAPID key.
 7. **Project settings → Service accounts → Generate new private key.** This downloads a JSON file. Keep it secret and never commit it.
 
@@ -54,9 +56,10 @@ One person creates the challenge and taps **Share invite**. The other person sig
 ```bash
 cp .env.example .env.local   # fill it in
 npm install
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000 (landing) and /app (the app)
 npm test                     # game-logic tests
 npm run test:rules           # Firestore rules in the emulator (needs Java 21+)
+node --experimental-strip-types scripts/make-icons.mjs && node scripts/postinstall.mjs   # after changing Tik: rebuild icons + OG image
 ```
 Push needs HTTPS or localhost. For testing on a real phone, use the Vercel deployment.
 

@@ -6,12 +6,12 @@ The landing page at `/`, the short invite page at `/?join=CODE`, and the link-pr
 
 **Tagline:** "Tick it or pay for it." (alternatives are on the /brand page).
 
-**Cast:** two made-up friends. **Kabir** is "you" (we see his phone). **Zoya** is his friend.
-- Kabir's tasks: Gym · 2 LeetCode problems · No reels before noon
-- Zoya's tasks: Run 5k · Read 20 pages · Practice guitar
+**Cast:** two made-up friends. **Aryaan** is "you" (we see his phone). **Shanayaa** is his friend.
+- Aryaan's tasks: Gym · 2 LeetCode problems · No reels before noon
+- Shanayaa's tasks: Run 5k · Read 20 pages · Practice guitar
 - Settings: round 1, 7 days (Mon to Sun), ₹100 per missed day, a miss = leaving any task undone ("Finish every task")
 
-**The week:** Mon and Tue clean for both. Wednesday is the big day: Zoya ticks first, nudges Kabir, he gets the 9pm warning and still skips the gym, so Wednesday is a miss. Zoya misses Friday, Kabir misses Saturday. Final score: Kabir 2 misses, Zoya 1, so Kabir owes Zoya ₹100.
+**The week:** Mon and Tue clean for both. Wednesday is the big day: Shanayaa ticks first, nudges Aryaan, he gets the 9pm warning and still skips the gym, so Wednesday is a miss. Shanayaa misses Friday, Aryaan misses Saturday. Final score: Aryaan 2 misses, Shanayaa 1, so Aryaan owes Shanayaa ₹100.
 
 ---
 
@@ -21,10 +21,10 @@ The landing page at `/`, the short invite page at `/?join=CODE`, and the link-pr
 |---|---|---|---|
 | 0 | Hero | Wordmark, tagline, two buttons, Tik waking up | proud |
 | 1 | The pact | Two names, three promises each, one week, ₹100 | sleeping, waking up at the end |
-| 2 | Pick your ticks | Kabir typing his tasks into the real task editor | proud (small) |
+| 2 | Pick your ticks | Aryaan typing his tasks into the real task editor | proud (small) |
 | 3 | Set the stakes | Stake ₹100, 7 days, "Finish every task" picked | collector (tiny tease) |
-| 4 | Tick in real time | Zoya taps Run 5k, then Kabir's phone buzzes | proud |
-| 5 | The nudge | "👀 Zoya nudged you" lands on Kabir's lock screen | nudge |
+| 4 | Tick in real time | Shanayaa taps Run 5k, then Aryaan's phone buzzes | proud |
+| 5 | The nudge | "👀 Shanayaa nudged you" lands on Aryaan's lock screen | nudge |
 | 6 | 9pm | The reminder push, the clock, two tasks still open | clock's ticking |
 | 7 | A miss | Wednesday's cell turns coral, the money card flips | collector |
 | 8 | Round over | Final score, settle on UPI, "Start the next round" | collector, then proud |
@@ -56,11 +56,11 @@ Then: How to install, FAQ, footer.
 
 **H2:** Two friends. One week. ₹100 a slip.
 
-**Body:** Kabir and Zoya made a deal. A few promises each, every single day, for seven days. Miss a day and you pay the other one.
+**Body:** Aryaan and Shanayaa made a deal. A few promises each, every single day, for seven days. Miss a day and you pay the other one.
 
-**Small print under it:** Kabir and Zoya are made up. The excuses are very real.
+**Small print under it:** Aryaan and Shanayaa are made up. The excuses are very real.
 
-**Mock:** two name chips, "Kabir" and "Zoya", with "vs" between them. Below, a strip: `7 days · ₹100 per missed day`.
+**Mock:** two name chips, "Aryaan" and "Shanayaa", with "vs" between them. Below, a strip: `7 days · ₹100 per missed day`.
 
 *Tik:* sleeping on the strip ("round not started"), wakes up as the scene finishes.
 
@@ -81,7 +81,7 @@ Then: How to install, FAQ, footer.
 ```
 Rows type themselves in, one at a time.
 
-**Caption:** Up to 8 tasks each. Zoya picked Run 5k, Read 20 pages and Practice guitar.
+**Caption:** Up to 8 tasks each. Shanayaa picked Run 5k, Read 20 pages and Practice guitar.
 
 ---
 
@@ -100,7 +100,7 @@ WHAT COUNTS AS A MISSED DAY
 [ ] Do at least one     It only counts as a miss if you did none of your tasks that day.
 ```
 
-**Caption:** Rounds run 7, 14, 21 or 30 days. Kabir and Zoya went strict.
+**Caption:** Rounds run 7, 14, 21 or 30 days. Aryaan and Shanayaa went strict.
 
 ---
 
@@ -108,13 +108,13 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Tick it. They'll know.
 
-**Body:** Wednesday, 7:12am. Zoya finishes her run and taps it off. Across town, Kabir's phone buzzes.
+**Body:** Wednesday, 7:12am. Shanayaa finishes her run and taps it off. Across town, Aryaan's phone buzzes.
 
-**Mock, left (Zoya's phone):** her Today card. `Run 5k` gets ticked, the bar fills to 1/3.
+**Mock, left (Shanayaa's phone):** her Today card. `Run 5k` gets ticked, the bar fills to 1/3.
 
-**Mock, right (Kabir's lock screen), slides in from the top:**
+**Mock, right (Aryaan's lock screen), slides in from the top:**
 > **cTicks** · now
-> **Zoya is on the board**
+> **Shanayaa is on the board**
 > First task done: Run 5k (1/3)
 
 **Caption:** Your friends hear about every tick. Clear the whole list and they get "cleared the day 🔥".
@@ -125,11 +125,11 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Then comes the nudge.
 
-**Body:** 4pm. Kabir still has two tasks open, and Zoya can see exactly which ones. One tap.
+**Body:** 4pm. Aryaan still has two tasks open, and Shanayaa can see exactly which ones. One tap.
 
-**Mock (Kabir's lock screen):**
+**Mock (Aryaan's lock screen):**
 > **cTicks** · now
-> **👀 Zoya nudged you**
+> **👀 Shanayaa nudged you**
 > 2 tasks still open today. ₹100 on the line.
 
 **Caption:** One nudge per friend every 30 minutes. Pressure, not spam.
@@ -142,12 +142,12 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Tick tock.
 
-**Body:** Around 9pm, cTicks warns anyone who's about to miss. Kabir knocks out his LeetCode. The gym can wait, right?
+**Body:** Around 9pm, cTicks warns anyone who's about to miss. Aryaan knocks out his LeetCode. The gym can wait, right?
 
-**Mock (Kabir's lock screen):**
+**Mock (Aryaan's lock screen):**
 > **cTicks** · 9:04 pm
 > **⏰ Clock's ticking**
-> 2 left: Gym, 2 LeetCode problems. Finish before midnight or you owe ₹100. Zoya is at 3/3.
+> 2 left: Gym, 2 LeetCode problems. Finish before midnight or you owe ₹100. Shanayaa is at 3/3.
 
 **Caption:** The day ends at midnight, India time. No extensions.
 
@@ -161,14 +161,14 @@ WHAT COUNTS AS A MISSED DAY
 
 **Body:** The gym did not wait. At midnight Wednesday locks in, and in the morning everyone gets the news.
 
-**Mock (Kabir's lock screen, 9am Thursday):**
+**Mock (Aryaan's lock screen, 9am Thursday):**
 > **cTicks** · 9:02 am
-> **💸 Kabir missed yesterday**
-> Running total: Kabir owes Zoya ₹100.
+> **💸 Aryaan missed yesterday**
+> Running total: Aryaan owes Shanayaa ₹100.
 
-**Mock (Kabir's dashboard):** the round grid's Wednesday cell flips to coral ✗. The money card flips from "All square" to:
-> **You owe Zoya ₹100** (coral)
-> Missed days this round: you 1 · Zoya 0
+**Mock (Aryaan's dashboard):** the round grid's Wednesday cell flips to coral ✗. The money card flips from "All square" to:
+> **You owe Shanayaa ₹100** (coral)
+> Missed days this round: you 1 · Shanayaa 0
 
 **Caption:** You can only tick your own tasks, and only today's. No backfilling Wednesday on Thursday.
 
@@ -180,18 +180,18 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Sunday night, it's over.
 
-**Body:** Zoya slipped on Friday, Kabir slipped again on Saturday. Misses cancel out, so Kabir owes Zoya one day's stake.
+**Body:** Shanayaa slipped on Friday, Aryaan slipped again on Saturday. Misses cancel out, so Aryaan owes Shanayaa one day's stake.
 
 **Mock (push, Monday 9am):**
 > **🏁 Round 1 is over**
-> Final: Kabir owes Zoya ₹100. Settle up, then start round 2 in the app.
+> Final: Aryaan owes Shanayaa ₹100. Settle up, then start round 2 in the app.
 
 **Mock (money card):**
-> **Final: You owe Zoya ₹100**
-> Missed days this round: you 2 · Zoya 1
+> **Final: You owe Shanayaa ₹100**
+> Missed days this round: you 2 · Shanayaa 1
 > `Start the next round`
 
-**Body 2:** Kabir pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2. Same tasks or new ones.
+**Body 2:** Aryaan pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2. Same tasks or new ones.
 
 *Tik:* collector while the score shows, flips to proud on "Start the next round".
 
@@ -270,8 +270,8 @@ Skips the story. One screen.
 
 **Kicker:** You've been challenged
 
-**H1:** Zoya challenged you on cTicks
-*(Fallback when we don't know the name: "Your friend challenged you on cTicks". See the open question below.)*
+**H1:** Shanayaa challenged you on cTicks
+*(Fallback when the link has no name: "Your friend challenged you on cTicks".)*
 
 **One line:** Pick your daily tasks, tick them off before midnight, and pay up if you miss a day.
 
@@ -305,14 +305,14 @@ Skips the story. One screen.
 | Stake per missed day, 7/14/21/30-day rounds, start today or tomorrow | `Onboard.tsx`, rules `validGroup` |
 | "Finish every task" / "Do at least one" | `RulePicker`, `isMiss()` in `lib/logic.ts` |
 | Friends get a push for every tick, "cleared the day 🔥" for the last one | `feedPush()` in `lib/feed.ts` |
-| "Zoya is on the board / First task done: Run 5k (1/3)" | `feedPush()` check, n = 1 |
+| "Shanayaa is on the board / First task done: Run 5k (1/3)" | `feedPush()` check, n = 1 |
 | Nudge text, one nudge per friend per 30 minutes | `feedPush()` nudge; `Dashboard.tsx` 30-min check (per device) |
 | Nudge only shows while your friend still has tasks open | `Dashboard.tsx` (button only when `left > 0`) |
 | Around 9pm warning, exact text | `app/api/cron/reminder` (Vercel cron fires within the 9pm hour) |
-| Around 9am results: "💸 Kabir missed yesterday", "🏁 Round 1 is over" | `app/api/cron/results` |
+| Around 9am results: "💸 Aryaan missed yesterday", "🏁 Round 1 is over" | `app/api/cron/results` |
 | Day ends at midnight India time; today only; own tasks only; phone clock doesn't matter | `firestore.rules` `istToday()`, players writable only by their uid |
 | Misses cancel out; you owe the stake to each other player | `ledger()` in `lib/logic.ts` |
-| "You owe Zoya ₹100", "Final: …", "Start the next round" | `DashboardView` |
+| "You owe Shanayaa ₹100", "Final: …", "Start the next round" | `DashboardView` |
 | Editing tasks tells everyone | `EditTasksSheet` posts a `tasks` feed item, pushed to the others |
 | 2 to 6 people | `Onboard.tsx` join check, rules |
 | Free, no ads | Firebase Spark + Vercel Hobby, no ads in the app |
@@ -320,7 +320,8 @@ Skips the story. One screen.
 | Desktop notifications | Verified in desktop Chrome (STATUS.md device matrix). Desktop Safari not tested yet |
 | cTicks never moves money | The app has no payments code at all |
 
-## Open questions for Faiz
+## Decisions (21 Nov 2026)
 
-1. **Friend's name on the invite page.** A signed-out visitor can't read the group (the rules need sign-in, and names live in member-only player docs), so the page can't look up "Zoya". Options: (a) the app adds the sender's first name to the link it shares, e.g. `/?join=K7XQ2M&from=Zoya`, and old links fall back to "Your friend"; (b) always say "Your friend challenged you". I recommend (a). The rules stay as they are either way.
-2. **Desktop Safari.** The FAQ says notifications work on laptops. That's verified in Chrome only. Fine to keep the line as is?
+1. **Friend's name on the invite page:** the app's Share invite adds the sender's name to the link (`/?join=K7XQ2M&from=Shanayaa`). Links without it say "Your friend challenged you". The rules didn't change.
+2. **Desktop notifications** line stays as written (verified in desktop Chrome; desktop Safari still to check).
+3. **Names:** Aryaan (you) and Shanayaa (the friend). **Tik:** the Stroke concept. **Wordmark:** Bold (Space Grotesk, lime T). **Tagline:** Tick it or pay for it.
