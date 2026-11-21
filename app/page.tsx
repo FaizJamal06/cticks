@@ -22,13 +22,21 @@ try{sessionStorage.setItem('payup.join',c)}catch(e){}
 $('inv-code').textContent=c;if(f)$('inv-name').textContent=f;
 $('inv-signup').href='/signup?join='+c;$('inv-login').href='/login?join='+c;})()`;
 
-// Scene triggers, per block (copy and stage separately, so a tall phone mock plays when it's actually on screen):
-// data-in once (plays the entrance), data-live while on screen (runs Tik's idle loop).
-const SCENES = `(function(){var d=document.documentElement,s=document.querySelectorAll('[data-scene]');d.setAttribute('data-io','');
-if(!('IntersectionObserver' in window)){s.forEach(function(e){e.setAttribute('data-in','');e.setAttribute('data-live','')});return}
-var once=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.setAttribute('data-in','');once.unobserve(e.target)}})},{rootMargin:'0px 0px -30% 0px'});
-var live=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersecting?e.target.setAttribute('data-live',''):e.target.removeAttribute('data-live')})});
-s.forEach(function(e){once.observe(e);live.observe(e)})})()`;
+// One shared IntersectionObserver for everything that reacts to scroll. Its line sits at 70% of the screen height,
+// where the week thread's Tik rides. Per element:
+// [data-scene] blocks: data-in once (plays the entrance), data-live while on screen (runs Tik's idle loop)
+// [data-wk] day markers: data-on once the line has passed them (fills them in; unfills on the way back up)
+// [data-past=x]: html[data-x] while the element is above the screen. [data-near=x]: html[data-x] while it's on screen.
+// Markers and past-flags are re-read from their positions on every callback, so a jump (Home key, an anchor link)
+// can't leave them stale: any jump moves some scene block across the line, which fires a callback.
+const SCENES = `(function(){var d=document.documentElement,q=function(s){return document.querySelectorAll(s)},w=q('[data-wk]'),p=q('[data-past]');d.setAttribute('data-io','');
+if(!('IntersectionObserver' in window)){q('[data-scene]').forEach(function(e){e.setAttribute('data-in','');e.setAttribute('data-live','')});return}
+var io=new IntersectionObserver(function(es){es.forEach(function(e){var t=e.target,k=t.dataset,on=e.isIntersecting;
+if(k.scene!=null){if(on)t.setAttribute('data-in','');t.toggleAttribute('data-live',on)}
+if(k.near)d.toggleAttribute('data-'+k.near,on)});
+var y=innerHeight*.7;w.forEach(function(m){m.toggleAttribute('data-on',m.getBoundingClientRect().top<y)});
+p.forEach(function(m){d.toggleAttribute('data-'+m.dataset.past,m.getBoundingClientRect().bottom<0)})},{rootMargin:'0px 0px -30% 0px'});
+q('[data-scene],[data-wk],[data-past],[data-near]').forEach(function(e){io.observe(e)})})()`;
 
 /** Entrance delay (and optional rise distance) for an element inside a scene. */
 const at = (ms: number, y?: number): CSSProperties => ({ ["--d" as string]: `${ms}ms`, ...(y !== undefined && { ["--y" as string]: `${y}px` }) });
@@ -36,15 +44,23 @@ const at = (ms: number, y?: number): CSSProperties => ({ ["--d" as string]: `${m
 /** A block that plays its entrance when it scrolls into view. */
 const Blk = ({ children }: { children: ReactNode }) => <div className="blk" data-scene="" suppressHydrationWarning>{children}</div>;
 
-function Scene({ id, kicker, title, children, stage, flip, split }: {
+/** A day on the week thread. `d` is the letter ("" for a plain dot); `className` places it (see landing.css). */
+const Wk = ({ d, className = "" }: { d: string; className?: string }) => (
+  <i className={`wk ${className}`} data-wk={d} aria-hidden="true" suppressHydrationWarning />
+);
+
+function Scene({ id, kicker, title, children, stage, flip, split, shape, marks }: {
   id: string; kicker: string; title: ReactNode; children: ReactNode; stage: ReactNode; flip?: boolean;
   split?: boolean; // the stage is made of <Blk>s that trigger on their own (tall phone mocks on mobile)
+  shape?: boolean; // a big faded brand shape drifts behind this scene (landing.css picks it by id)
+  marks?: ReactNode; // day markers on the week thread
 }) {
   return (
-    <section className={`scene${flip ? " flip-side" : ""}`} id={id} aria-labelledby={`${id}-h`}>
+    <section className={`scene${flip ? " flip-side" : ""}${shape ? " has-shape" : ""}`} id={id} aria-labelledby={`${id}-h`}>
+      {marks}
       <div className="scene-copy" data-scene="" suppressHydrationWarning>
-        <p className="kicker rv" style={at(0, 10)}>{kicker}</p>
-        <h2 id={`${id}-h`} className="rv" style={at(0, 16)}>{title}</h2>
+        <p className="kicker rv" style={at(0, 6)}>{kicker}</p>
+        <h2 id={`${id}-h`} className="rv" style={at(40, 16)}>{title}</h2>
         {children}
       </div>
       {split ? <div className="scene-stage">{stage}</div> : <div className="scene-stage" data-scene="" suppressHydrationWarning>{stage}</div>}
@@ -98,19 +114,24 @@ function Crossfade({ from, to, size, d, s }: { from: Mood; to: Mood; size: numbe
 }
 
 const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+const THREAD_MOODS: Mood[] = ["proud", "nudge", "ticking", "collector"];
 
 export default function Landing() {
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: BOOT }} />
       <div className="land">
+        <i className="sentinel" data-past="scrolled" aria-hidden="true" />
         <header className="nav">
           <a href="/" className="logo nav-logo" aria-label="cTicks home"><Logo /></a>
-          <a href="/login" className="nav-link">Log in</a>
+          <div className="nav-actions">
+            <a href="/signup" className="btn nav-cta">Start your first round</a>
+            <a href="/login" className="btn ghost nav-login">Log in</a>
+          </div>
         </header>
 
         {/* ---------- invite version (/?join=CODE) ---------- */}
-        <main className="invite" aria-label="Invite">
+        <main className="invite has-shape" aria-label="Invite">
           <Tik mood="nudge" size={132} still={false} className="invite-tik" />
           <p className="kicker">You&apos;ve been challenged</p>
           <h1><bdi id="inv-name" suppressHydrationWarning>Your friend</bdi> challenged you on c<i>T</i>icks</h1>
@@ -129,67 +150,74 @@ export default function Landing() {
 
         {/* ---------- the story ---------- */}
         <main className="story">
-          <section className="scene hero" id="top">
+          <section className="scene opening has-shape" id="top">
             <div className="scene-copy" data-scene="" suppressHydrationWarning>
-              <p className="kicker rv" style={at(0, 0)}>two kinds of ticks. the ✓ and the clock.</p>
-              <h1 className="rv" style={at(0, 18)}>Tick it or pay for it.</h1>
-              <p className="lede rv" style={at(120, 10)}>
+              <p className="kicker rv" style={at(0, 6)}>two kinds of ticks. the ✓ and the clock.</p>
+              <h1 className="rv" style={at(40, 18)}>Tick it or pay for it.</h1>
+              <p className="lede rv" style={at(120, 8)}>
                 Pick your daily tasks. Tick them off before midnight. Miss a day and you owe your friends real money. cTicks keeps the score.
               </p>
-              <div className="cta-row rv" style={at(220, 8)}>
+              <div className="cta-row rv" style={at(200, 8)} data-past="hero-out">
                 <a className="btn" href="/signup">Start your first round</a>
                 <a className="btn ghost" href="/signup?tab=join">I have an invite code</a>
               </div>
-              <p className="small rv" style={at(300, 0)}>Already playing? <a href="/login">Log in</a></p>
+              <p className="small rv" style={at(260, 6)}>Already playing? <a href="/login">Log in</a></p>
             </div>
             <div className="scene-stage" data-scene="" suppressHydrationWarning>
-              <span className="hero-tik rv" style={at(80, 24)}><Tik mood="proud" size={240} still={false} /></span>
+              <span className="hero-tik rv" style={at(0, 24)}><Tik mood="proud" size={240} still={false} /></span>
             </div>
             <a className="scroll-cue" href="#pact">Here&apos;s how one week goes ↓</a>
           </section>
 
-          <Scene id="pact" kicker="the pact" title="Two friends. One week. ₹100 a slip." stage={
+          {/* The week: one thread runs down every scene from the pact to the round's end, with a Tik riding it. */}
+          <div className="week">
+          <div className="thread" aria-hidden="true">
+            <span className="thread-fill" />
+            <span className="thread-tik">{THREAD_MOODS.map((m) => <Tik key={m} mood={m} size={28} className={`m-${m}`} />)}</span>
+          </div>
+
+          <Scene id="pact" kicker="the pact" title="Two friends. One week. ₹100 a slip." marks={<Wk d="" className="dot" />} stage={
             <div className="pact">
               <div className="pact-cards">
-                <div className="card rv-x" style={{ ...at(150), ["--x" as string]: "-24px" }}>
+                <div className="card rv-x" style={{ ...at(280), ["--x" as string]: "-24px" }}>
                   <div className="name">Aryaan</div><div className="sub">3 daily tasks</div>
                 </div>
-                <span className="vs rv" style={at(300, 0)}>vs</span>
-                <div className="card rv-x" style={{ ...at(150), ["--x" as string]: "24px" }}>
+                <span className="vs rv" style={at(420, 0)}>vs</span>
+                <div className="card rv-x" style={{ ...at(280), ["--x" as string]: "24px" }}>
                   <div className="name">Shanayaa</div><div className="sub">3 daily tasks</div>
                 </div>
               </div>
-              <div className="chips rv" style={at(420, 0)}>
+              <div className="chips rv" style={at(500, 0)}>
                 <span className="chip">7 days</span><span className="chip">₹100 / missed day</span><span className="chip">Finish every task</span>
               </div>
-              <Crossfade from="sleeping" to="proud" size={120} d={400} s={1400} />
+              <Crossfade from="sleeping" to="proud" size={120} d={580} s={1400} />
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>
+            <p className="rv" style={at(120, 8)}>
               Aryaan and Shanayaa made a deal. A few promises each, every single day, for seven days. Miss a day and you pay the other one.
             </p>
-            <p className="small rv" style={at(180, 0)}>Aryaan and Shanayaa are made up. The excuses are very real.</p>
+            <p className="small rv" style={at(180, 6)}>Aryaan and Shanayaa are made up. The excuses are very real.</p>
           </Scene>
 
-          <Scene id="ticks" kicker="step 1" title="Pick your ticks." flip stage={
-            <div className="card mock rv" style={at(120, 0)}>
+          <Scene id="ticks" kicker="step 1" title="Pick your ticks." flip shape stage={
+            <div className="card mock rv" style={at(280, 16)}>
               <h2>Your daily tasks</h2>
               <div className="note" style={{ marginTop: 0 }}>Things you&apos;ll do every single day this round. Keep them specific.</div>
               {["Gym", "2 LeetCode problems", "No reels before noon"].map((t, i) => (
-                <div className="te-row rv" style={at([300, 420, 520][i], 10)} key={t}>
+                <div className="te-row rv" style={at([540, 620, 680][i], 8)} key={t}>
                   <span className="n">0{i + 1}</span><div className="input">{t}</div>
                 </div>
               ))}
-              <span className="btn ghost small rv" style={{ ...at(600, 0), marginTop: 10, display: "inline-block" }}>+ add task</span>
+              <span className="btn ghost small rv" style={{ ...at(760, 0), display: "inline-block" }}>+ add task</span>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>Everyone sets their own list. Make them small and specific, because you&apos;ll be ticking them every day.</p>
-            <p className="small rv" style={at(180, 0)}>Up to 8 tasks each. Shanayaa picked Run 5k, Read 20 pages and Practice guitar.</p>
+            <p className="rv" style={at(120, 8)}>Everyone sets their own list. Make them small and specific, because you&apos;ll be ticking them every day.</p>
+            <p className="small rv" style={at(180, 6)}>Up to 8 tasks each. Shanayaa picked Run 5k, Read 20 pages and Practice guitar.</p>
           </Scene>
 
-          <Scene id="stakes" kicker="step 2" title="Put a price on a bad day." stage={
+          <Scene id="stakes" kicker="step 2" title="Put a price on a bad day." marks={<><Wk d="M" className="late" /><Wk d="T" className="later" /></>} stage={
             <div className="stack">
-            <div className="card mock rv" style={at(120, 0)}>
+            <div className="card mock rv" style={at(280, 16)}>
               <h2>The rules</h2>
               <div className="row2">
                 <div className="f">STAKE PER MISSED DAY (₹)<div className="input">100</div></div>
@@ -199,32 +227,32 @@ export default function Landing() {
               <div className="choice">
                 <div className="opt">
                   <b>Finish every task</b><span>Leave even one task undone and that day counts as a miss.</span>
-                  <i className="sel" style={at(700)} />
+                  <i className="sel" style={at(760)} />
                 </div>
                 <div className="opt"><b>Do at least one</b><span>It only counts as a miss if you did none of your tasks that day.</span></div>
               </div>
             </div>
-            <span className="side-tik rv" style={at(900, 12)}><Tik mood="collector" size={72} still={false} /></span>
+            <span className="side-tik rv" style={at(960, 12)}><Tik mood="collector" size={72} still={false} /></span>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>You pick the stake and what counts as a miss. Strict or chill, your call.</p>
-            <p className="small rv" style={at(180, 0)}>Rounds run 7, 14, 21 or 30 days. Aryaan and Shanayaa went strict.</p>
+            <p className="rv" style={at(120, 8)}>You pick the stake and what counts as a miss. Strict or chill, your call.</p>
+            <p className="small rv" style={at(180, 6)}>Rounds run 7, 14, 21 or 30 days. Aryaan and Shanayaa went strict.</p>
           </Scene>
 
-          <Scene id="live" kicker="wednesday, 7:12am" title="Tick it. They'll know." flip split stage={
+          <Scene id="live" kicker="wednesday, 7:12am" title="Tick it. They'll know." flip split marks={<Wk d="W" />} stage={
             <div className="duo">
               <Blk>
-              <figure className="phone rv" style={at(120, 0)}>
+              <figure className="phone rv" style={at(280, 16)}>
                 <figcaption className="device-label">Shanayaa&apos;s phone</figcaption>
                 <div className="card">
                   <h2>Today · Wednesday <span className="tag">1/3 · 🔥 2</span></h2>
-                  <div className="progress"><span className="bar" style={{ width: "33.3%", ...at(600) }} /></div>
-                  <div className="task"><span className="box"><span className="box-fill" style={at(600)}>✓</span></span><span className="txt">Run 5k</span></div>
+                  <div className="progress"><span className="bar" style={{ width: "33.3%", ...at(700) }} /></div>
+                  <div className="task"><span className="box"><span className="box-fill" style={at(700)}>✓</span></span><span className="txt">Run 5k</span></div>
                   <div className="task"><span className="box" /><span className="txt">Read 20 pages</span></div>
                   <div className="task"><span className="box" /><span className="txt">Practice guitar</span></div>
                 </div>
               </figure>
-              <span className="side-tik rv" style={at(650, 12)}><Tik mood="proud" size={84} still={false} /></span>
+              <span className="side-tik rv" style={at(760, 12)}><Tik mood="proud" size={84} still={false} /></span>
               </Blk>
               <Blk>
               <Lock who="Aryaan's phone" time="7:12" day="Wednesday" buzz={1300}>
@@ -233,54 +261,54 @@ export default function Landing() {
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>Shanayaa finishes her run and taps it off. Across town, Aryaan&apos;s phone buzzes.</p>
-            <p className="small rv" style={at(180, 0)}>Your friends hear about every tick. Clear the whole list and they get &ldquo;cleared the day 🔥&rdquo;.</p>
+            <p className="rv" style={at(120, 8)}>Shanayaa finishes her run and taps it off. Across town, Aryaan&apos;s phone buzzes.</p>
+            <p className="small rv" style={at(180, 6)}>Your friends hear about every tick. Clear the whole list and they get &ldquo;cleared the day 🔥&rdquo;.</p>
           </Scene>
 
-          <Scene id="nudge" kicker="4:02pm" title="Then comes the nudge. 👀" split stage={
+          <Scene id="nudge" kicker="4:02pm" title="Then comes the nudge. 👀" split marks={<Wk d="" className="dot mk-nudge" />} stage={
             <div className="duo">
               <Blk>
-              <figure className="phone rv" style={at(120, 0)}>
+              <figure className="phone rv" style={at(280, 16)}>
                 <figcaption className="device-label">Shanayaa&apos;s phone</figcaption>
                 <div className="card">
                   <div className="friend">
                     <div><div className="name">Aryaan</div><div className="sub" style={{ marginTop: 2 }}>1/3 today · 🔥 2</div></div>
-                    <span className="btn small ghost press" style={at(600)}>Nudge 👀</span>
+                    <span className="btn small ghost press" style={at(700)}>Nudge 👀</span>
                   </div>
-                  <div style={{ marginTop: 10 }}>
+                  <div className="ftasks">
                     <div className="ftask"><span className="dot on" />No reels before noon</div>
                     <div className="ftask"><span className="dot" />Gym</div>
                     <div className="ftask"><span className="dot" />2 LeetCode problems</div>
                   </div>
                 </div>
               </figure>
-              <span className="side-tik rv" style={at(600, 12)}><Tik mood="nudge" size={84} still={false} /></span>
+              <span className="side-tik rv" style={at(760, 12)}><Tik mood="nudge" size={84} still={false} /></span>
               </Blk>
               <Blk>
               <Lock who="Aryaan's phone" time="4:02" day="Wednesday" buzz={1250}>
-                <Notif d={850} time="now" title="👀 Shanayaa nudged you" body="2 tasks still open today. ₹100 on the line." />
+                <Notif d={900} time="now" title="👀 Shanayaa nudged you" body="2 tasks still open today. ₹100 on the line." />
               </Lock>
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>Aryaan still has two tasks open, and Shanayaa can see exactly which ones. One tap.</p>
-            <p className="small rv" style={at(180, 0)}>One nudge per friend every 30 minutes. Pressure, not spam.</p>
+            <p className="rv" style={at(120, 8)}>Aryaan still has two tasks open, and Shanayaa can see exactly which ones. One tap.</p>
+            <p className="small rv" style={at(180, 6)}>One nudge per friend every 30 minutes. Pressure, not spam.</p>
           </Scene>
 
-          <Scene id="ninepm" kicker="9:04pm" title="Tick tock." flip stage={
+          <Scene id="ninepm" kicker="9:04pm" title="Tick tock." flip shape marks={<Wk d="" className="dot mk-9" />} stage={
             <div className="duo solo">
               <Lock who="Aryaan's phone" time="9:04" day="Wednesday" buzz={900}>
-                <Notif d={500} time="9:04 pm" title="⏰ Clock's ticking"
+                <Notif d={560} time="9:04 pm" title="⏰ Clock's ticking"
                   body="2 left: Gym, 2 LeetCode problems. Finish before midnight or you owe ₹100. Shanayaa is at 3/3." />
               </Lock>
-              <span className="big-tik rv" style={at(300, 16)}><Tik mood="ticking" size={150} still={false} /></span>
+              <span className="big-tik rv" style={at(280, 16)}><Tik mood="ticking" size={150} still={false} /></span>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>Around 9pm, cTicks warns anyone who&apos;s about to miss. Aryaan knocks out his LeetCode. The gym can wait, right?</p>
-            <p className="small rv" style={at(180, 0)}>The day ends at midnight, India time. No extensions.</p>
+            <p className="rv" style={at(120, 8)}>Around 9pm, cTicks warns anyone who&apos;s about to miss. Aryaan knocks out his LeetCode. The gym can wait, right?</p>
+            <p className="small rv" style={at(180, 6)}>The day ends at midnight, India time. No extensions.</p>
           </Scene>
 
-          <Scene id="miss" kicker="thursday, 9:02am" title="Midnight. That's a miss." split stage={
+          <Scene id="miss" kicker="thursday, 9:02am" title="Midnight. That's a miss." split marks={<><Wk d="T" className="mk-thu" /><Wk d="F" className="late" /><Wk d="S" className="later" /></>} stage={
             <div className="stack">
               <Blk>
               <Lock who="Aryaan's phone" time="9:02" day="Thursday" buzz={700}>
@@ -288,7 +316,7 @@ export default function Landing() {
               </Lock>
               </Blk>
               <Blk>
-              <div className="card ledger rv" style={at(150, 0)}>
+              <div className="card ledger rv" style={at(280, 16)}>
                 <h2>The money <span className="tag">₹100 / missed day</span></h2>
                 <div className="flip">
                   <div className="flip-front" style={at(900)} aria-hidden="true">
@@ -304,7 +332,7 @@ export default function Landing() {
               <span className="side-tik rv" style={at(1200, 12)}><Tik mood="collector" size={72} still={false} /></span>
               </Blk>
               <Blk>
-              <div className="card rv" style={at(150, 0)}>
+              <div className="card rv" style={at(280, 16)}>
                 <h2>Round 1</h2>
                 <div className="dayhead">{DAYS.map((x, i) => <span key={i}>{x}</span>)}</div>
                 <div className="grid">
@@ -322,11 +350,11 @@ export default function Landing() {
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>The gym did not wait. At midnight Wednesday locks in, and in the morning everyone gets the news.</p>
-            <p className="small rv" style={at(180, 0)}>You can only tick your own tasks, and only today&apos;s. No backfilling Wednesday on Thursday.</p>
+            <p className="rv" style={at(120, 8)}>The gym did not wait. At midnight Wednesday locks in, and in the morning everyone gets the news.</p>
+            <p className="small rv" style={at(180, 6)}>You can only tick your own tasks, and only today&apos;s. No backfilling Wednesday on Thursday.</p>
           </Scene>
 
-          <Scene id="final" kicker="monday, 9:01am" title="Sunday night, it's over." flip split stage={
+          <Scene id="final" kicker="monday, 9:01am" title="Sunday night, it's over." flip split shape marks={<><Wk d="S" className="mk-sun" /><Wk d="✓" className="end" /></>} stage={
             <div className="stack">
               <Blk>
               <Lock who="Aryaan's phone" time="9:01" day="Monday" buzz={700}>
@@ -335,39 +363,40 @@ export default function Landing() {
               </Lock>
               </Blk>
               <Blk>
-              <div className="upi rv" style={at(500, 10)}>
+              <div className="upi rv" style={at(280, 16)}>
                 <span className="upi-tick">✓</span>
                 <div><b>₹100 sent to Shanayaa</b><span>in your UPI app, not in cTicks</span></div>
               </div>
               </Blk>
               <Blk>
-              <div className="card ledger rv" style={at(150, 0)}>
+              <div className="card ledger rv" style={at(280, 16)}>
                 <h2>The money <span className="tag">₹100 / missed day</span></h2>
                 <div className="big lose">Final: You owe Shanayaa ₹100</div>
                 <div className="meta">Missed days this round: you 2 · Shanayaa 1</div>
-                <div className="grid" style={{ marginTop: 14 }}>
+                <div className="grid ledger-grid">
                   <div className="grow"><div className="who">You</div><Cells marks="✓✓✗✓✓✗✓" /></div>
                   <div className="grow"><div className="who">Shanayaa</div><Cells marks="✓✓✓✓✗✓✓" /></div>
                 </div>
-                <span className="btn press" style={{ ...at(1300), marginTop: 14, display: "block", textAlign: "center" }}>Start the next round</span>
+                <span className="btn press next-round" style={at(1300)}>Start the next round</span>
               </div>
               <span className="side-tik"><Crossfade from="collector" to="proud" size={72} d={300} s={1300} /></span>
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(110, 10)}>Shanayaa slipped on Friday, Aryaan slipped again on Saturday. Misses cancel out, so Aryaan owes Shanayaa one day&apos;s stake.</p>
-            <p className="rv" style={at(170, 8)}>He pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2.</p>
+            <p className="rv" style={at(120, 8)}>Shanayaa slipped on Friday, Aryaan slipped again on Saturday. Misses cancel out, so Aryaan owes Shanayaa one day&apos;s stake.</p>
+            <p className="rv" style={at(180, 8)}>He pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2.</p>
           </Scene>
+          </div>
 
-          <section className="scene cta" id="start" data-scene="" suppressHydrationWarning aria-labelledby="start-h">
+          <section className="scene cta" id="start" data-scene="" data-near="cta-near" suppressHydrationWarning aria-labelledby="start-h">
             <span className="rv" style={at(0, 20)}><Tik mood="proud" size={150} still={false} /></span>
             <h2 id="start-h" className="rv" style={at(60, 16)}>Your move.</h2>
-            <p className="lede rv" style={at(140, 10)}>Pick a friend. Pick your ticks. Put money on it.</p>
-            <div className="cta-row rv" style={at(220, 8)}>
+            <p className="lede rv" style={at(120, 8)}>Pick a friend. Pick your ticks. Put money on it.</p>
+            <div className="cta-row rv" style={at(200, 8)}>
               <a className="btn" href="/signup">Start your first round</a>
               <a className="btn ghost" href="/signup?tab=join">I have an invite code</a>
             </div>
-            <p className="small rv" style={at(300, 0)}>Free. Android, iPhone and desktop. 2 to 6 people per challenge.</p>
+            <p className="small rv" style={at(260, 6)}>Free. Android, iPhone and desktop. 2 to 6 people per challenge.</p>
           </section>
 
           <section className="info" id="install" aria-labelledby="install-h">
@@ -417,12 +446,18 @@ export default function Landing() {
           </section>
         </main>
 
+        {/* The end of the story: Tik, the wordmark and the closing line. */}
         <footer className="foot">
           <span className="logo foot-logo"><Logo /></span>
           <span className="foot-tag">Tick it or pay for it.</span>
-          <a href="/login">Log in</a>
           <p>Keeps score. Never touches your money.</p>
+          <a href="/login" className="btn ghost foot-login">Log in</a>
         </footer>
+
+        {/* Phones: the next step stays in reach after the hero, and steps aside while the final CTA is on screen. */}
+        <div className="dock">
+          <a className="btn" href="/signup">Start your first round</a>
+        </div>
       </div>
       <script dangerouslySetInnerHTML={{ __html: SCENES }} />
     </>

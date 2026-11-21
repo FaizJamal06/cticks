@@ -1,102 +1,319 @@
-/* Landing page (/). The mocks reuse the app's own classes from globals.css, so they look exactly like the product.
+/* Landing page (/) and the invite card (/?join=CODE). The mocks reuse the app's own classes from globals.css,
+   so they look exactly like the product.
    Motion rule: the final state is the default. html[data-motion] (JS on, motion OK) arms the "before" state,
-   and [data-in] on a scene plays its entrance once. transform/opacity only. */
+   and [data-in] on a block plays its entrance once. transform/opacity only.
+   Spacing rule: only the --s* tokens (4/8px scale), --rhythm between sections, --edge-l/--edge-r for the sides. */
 
 html[data-leaving] body { visibility: hidden; }
+/* Anchor jumps land below the sticky header (60 + 16) and above the phone CTA bar (72 + 16). */
+html:has(.land) { scroll-padding-top: 76px; scroll-padding-bottom: 88px; -webkit-text-size-adjust: 100%; }
 
 .land {
+  /* spacing, 4/8px scale */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s12: 48px; --s16: 64px; --s24: 96px;
+  --rhythm: clamp(64px, 10vh, 128px); /* the one gap between sections: each section pads half of it, top and bottom */
+  /* one content grid: the same max width and side edges for the header, every section and the CTA bar */
+  --maxw: 1120px;
+  --gutter: 20px;
+  --edge-l: max(calc(env(safe-area-inset-left, 0px) + var(--gutter)), calc((100% - var(--maxw)) / 2));
+  --edge-r: max(calc(env(safe-area-inset-right, 0px) + var(--gutter)), calc((100% - var(--maxw)) / 2));
+  --thread-x: calc(var(--edge-l) - min(var(--s12), var(--edge-l) / 2)); /* in the left gutter: 10px on phones */
+  --nav-h: 60px;  /* a 44px tap target plus --s2 above and below */
+  --dock-h: 72px; /* a 48px button plus --s3 above and below */
+  --mark: 16px;   /* day marker */
+  --tik-ride: 20px; /* the Tik on the thread */
+  /* type scale */
+  --fs-hero: clamp(48px, 13vw, 88px);
+  --fs-h1: clamp(44px, 11vw, 72px);
+  --fs-h2: clamp(36px, 9vw, 56px);
+  --fs-h3: clamp(30px, 7vw, 44px);
+  --fs-lede: 18px; --fs-body: 17px; --fs-small: 15px; --fs-kicker: 14px; --fs-cap: 12px;
+  /* motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-io: cubic-bezier(0.77, 0, 0.175, 1);
-  max-width: 1120px; margin: 0 auto;
-  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
-  overflow-x: clip;
+  /* glow colours as rgb triplets, so one gradient takes any of them */
+  --lime-rgb: 215 255 58; --amber-rgb: 255 178 58; --coral-rgb: 255 91 57;
+
+  position: relative; isolation: isolate; overflow-x: clip; min-height: 100svh;
 }
+@media (min-width: 600px) { .land { --gutter: 32px; } }
+@media (min-width: 900px) { .land { --mark: 20px; --tik-ride: 28px; } }
+
+.nav, .scene, .info, .invite, .foot, .dock { padding-left: var(--edge-l); padding-right: var(--edge-r); }
+
+/* ---------- background: glows (-4), brand shapes (-3), pattern (-2), grain (-1), all under the content ---------- */
+
+/* Grain: keeps the black from looking flat and hides banding in the glows. Fixed, so it never repaints on scroll. */
+.land::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.07;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 3 -1.3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E") 0 0 / 180px;
+}
+/* A loose grid of tiny ✓s and watch-dial ticks, fading out toward the edges. */
+.land::after {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='%23f2f0e8' stroke-linecap='round' stroke-linejoin='round' stroke-opacity='.05'%3E%3Cpath d='M20 34l5 5 10-11' stroke-width='2'/%3E%3Cpath d='M92 80v9M80 24l3 3M28 94h6' stroke-width='1.6'/%3E%3C/svg%3E") 0 0 / 120px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(transparent, #000 320px, #000 calc(100% - 320px), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent), linear-gradient(transparent, #000 320px, #000 calc(100% - 320px), transparent);
+  mask-composite: intersect;
+}
+
+/* Glows follow the story's mood: lime for the ticks, warming through the afternoon to amber at 9pm, coral for the
+   miss, lime again at the end. Each one spills a quarter of a section into its neighbours, so the colour changes
+   as you scroll with no edges. Centred behind the mocks; body text only ever sits in the faint outer part. */
+.scene, .info, .invite, .foot { position: relative; --glow: var(--lime-rgb); --ga: 0.08; --gx: 50%; --gy: 64%; }
+/* The glow box is the section plus a quarter above and below; --gx/--gy are in section terms, converted to the box.
+   closest-side sizing means the glow always fades to nothing before the box's edge: never a hard line. */
+.scene::before, .info::before, .invite::before, .foot::before {
+  content: ""; position: absolute; z-index: -4; inset: -25% 0; pointer-events: none;
+  background: radial-gradient(closest-side at var(--gx) calc((25% + var(--gy)) / 1.5),
+    rgb(var(--glow) / var(--ga)), rgb(var(--glow) / calc(var(--ga) * 0.4)) 45%, rgb(var(--glow) / 0));
+}
+@media (min-width: 900px) { .scene { --gx: 74%; --gy: 50%; } .scene.flip-side { --gx: 26%; } }
+/* centred on each Tik (measured: 13% down the opening on phones, 71% / 43% on desktop; 11% down the invite) */
+.opening { --ga: 0.13; --gy: 13%; }
+.cta { --ga: 0.12; --gx: 50%; --gy: 22%; }
+.info { --ga: 0.03; }
+.invite { --ga: 0.13; --gy: 11%; }
+.foot { --ga: 0.06; --gy: 30%; }
+@media (min-width: 900px) { .opening { --gx: 71%; --gy: 43%; } .scene.cta { --gx: 50%; } }
+#pact { --ga: 0.06; }
+#ticks { --ga: 0.07; }
+#stakes { --ga: 0.06; }
+#live { --ga: 0.09; }
+#nudge { --glow: var(--amber-rgb); --ga: 0.05; }
+#ninepm { --glow: var(--amber-rgb); --ga: 0.11; }
+#miss { --glow: var(--coral-rgb); --ga: 0.09; }
+#final { --ga: 0.09; }
+
+/* Big faded brand shapes behind key scenes: a watch dial, an oversized ✓, a stopwatch at 9. They drift a little
+   slower than the page (scroll-driven, transform only) and stay far too faint to compete with text or mocks. */
+.has-shape::after {
+  content: ""; position: absolute; z-index: -3; pointer-events: none;
+  width: var(--sw); aspect-ratio: 1; left: calc(var(--gx) - var(--sw) / 2); top: calc(var(--sy, var(--gy)) - var(--sw) / 2);
+  background: var(--shape) center / contain no-repeat; opacity: var(--so); transform: rotate(var(--sr, 0deg));
+}
+.opening, .invite {
+  --shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='%23d7ff3a'%3E%3Ccircle cx='200' cy='200' r='186' stroke-width='10' stroke-dasharray='1.6 17.878' stroke-opacity='.55'/%3E%3Ccircle cx='200' cy='200' r='182' stroke-width='20' stroke-dasharray='3 92.295'/%3E%3Ccircle cx='200' cy='200' r='150' stroke-width='1.5' stroke-opacity='.5'/%3E%3C/svg%3E");
+  --sw: min(400px, 104vw); --so: 0.1;
+}
+@media (min-width: 900px) { .opening { --sw: 600px; } }
+/* phones: the copy is on top, so scene shapes sit lower, behind the mocks and away from the text */
+#ticks, #final, #ninepm { --sy: 78%; }
+@media (min-width: 900px) { #ticks, #final, #ninepm { --sy: 50%; } }
+#ticks, #final {
+  --shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='none'%3E%3Cpath d='M11 32 24 45 50 16' stroke='%23d7ff3a' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --sw: min(460px, 120vw); --so: 0.05;
+}
+#ticks { --sr: -12deg; --so: 0.04; }
+#final { --sr: 6deg; --so: 0.06; }
+#ninepm {
+  --shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='%23ffb23a' stroke-linecap='round'%3E%3Ccircle cx='200' cy='214' r='160' stroke-width='12' stroke-dasharray='754 252' transform='rotate(-90 200 214)'/%3E%3Ccircle cx='200' cy='214' r='136' stroke-width='6' stroke-dasharray='1.4 34.2' stroke-opacity='.6'/%3E%3Cpath d='M200 214H90' stroke-width='10'/%3E%3Cpath d='M200 36v18M182 26h36' stroke-width='12'/%3E%3Ccircle cx='200' cy='214' r='9' fill='%23ffb23a' stroke='none'/%3E%3C/svg%3E");
+  --sw: min(440px, 112vw); --so: 0.09;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .has-shape { view-timeline: --shape-tl block; }
+    .has-shape::after {
+      animation-name: drift; animation-duration: auto; animation-timing-function: linear; animation-fill-mode: both;
+      animation-timeline: --shape-tl; animation-range: cover;
+    }
+  }
+}
+@keyframes drift {
+  from { transform: translateY(calc(var(--s12) * -1)) rotate(calc(var(--sr, 0deg) - 8deg)); }
+  to { transform: translateY(var(--s12)) rotate(calc(var(--sr, 0deg) + 8deg)); }
+}
+
+/* ---------- header ---------- */
+.sentinel { position: absolute; top: var(--s4); left: 0; width: 1px; height: var(--s1); pointer-events: none; }
+.nav {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  min-height: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px);
+}
+/* Transparent at the top; once you scroll, a translucent blurred bar with a hairline. */
+.nav::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 200ms ease;
+  background: rgb(15 15 13 / 0.72); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgb(242 240 232 / 0.08);
+}
+html[data-scrolled] .nav::before { opacity: 1; }
+.nav-logo { font-size: 24px; text-decoration: none; }
+.nav-actions { display: flex; align-items: center; gap: var(--s2); }
+.land .nav-actions .btn { display: inline-flex; align-items: center; width: auto; min-height: 44px; padding: 0 var(--s4); font-size: 15px; border-radius: var(--s3); }
+.land .nav-actions .nav-cta { display: none; }
+/* Desktop: after the hero, a compact CTA joins Log in. It steps aside while the final CTA is on screen. */
+@media (min-width: 900px) {
+  .land .nav-actions .nav-cta {
+    display: inline-flex; visibility: hidden; opacity: 0; transform: translateY(calc(var(--s1) * -1));
+    transition: opacity 150ms ease, transform 150ms var(--ease-out), visibility 0s linear 150ms;
+  }
+  html[data-hero-out]:not([data-cta-near]):not([data-invite]) .land .nav-actions .nav-cta {
+    visibility: visible; opacity: 1; transform: none; transition: opacity 200ms ease, transform 200ms var(--ease-out), visibility 0s;
+  }
+  html[data-hero-out]:not([data-cta-near]):not([data-invite]) .land .nav-actions .nav-cta:active { transform: scale(0.97); }
+}
+@media (hover: hover) and (pointer: fine) { .land .nav-login:hover, .land .foot-login:hover { border-color: var(--mute); } }
+
+/* Phones: the same next step as a bottom bar, with the same show/hide rule. */
+.dock {
+  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
+  padding-top: var(--s3); padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  background: rgb(15 15 13 / 0.78); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  border-top: 1px solid rgb(242 240 232 / 0.08);
+  transform: translateY(100%); visibility: hidden; transition: transform 200ms var(--ease-out), visibility 0s linear 200ms;
+}
+html[data-hero-out]:not([data-cta-near]) .dock { transform: none; visibility: visible; transition: transform 300ms var(--ease-out), visibility 0s; }
+html[data-invite] .dock { display: none; }
+@media (min-width: 900px) { .dock { display: none; } }
+
+/* ---------- shared type ---------- */
 .land a:not(.btn) { color: inherit; }
-.land a.btn { display: block; text-align: center; text-decoration: none; transition: transform 160ms var(--ease-out); }
+.land .small a, .land a.text-link { color: var(--lime); }
+.land a.btn { display: block; text-align: center; text-decoration: none; transition: transform 160ms var(--ease-out); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .land a.btn:active { transform: scale(0.97); }
-.land .f { display: block; margin-top: 14px; font-size: 13px; color: var(--mute); font-family: var(--mono); }
+.land .f { display: block; margin-top: var(--s3); font-size: 13px; color: var(--mute); font-family: var(--mono); }
 .land .mock .input { font-family: var(--sans); color: var(--ink); }
 .land .row2 .f { display: flex; flex-direction: column; justify-content: space-between; }
 
-.nav { display: flex; justify-content: space-between; align-items: center; padding: calc(14px + env(safe-area-inset-top)) 0 6px; }
-.nav-logo { font-size: 26px; text-decoration: none; }
-.nav-link { font-size: 15px; text-decoration: none; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line); }
-@media (hover: hover) and (pointer: fine) { .nav-link:hover { border-color: var(--mute); } }
-
-.kicker { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lime); margin: 0; }
-.lede { color: var(--mute); font-size: 18px; line-height: 1.5; margin: 0; max-width: 40ch; }
-.small { color: var(--mute); font-size: 14px; line-height: 1.5; }
-.small a, .text-link { color: var(--lime); }
-.cta-row { display: grid; gap: 10px; margin-top: 22px; }
-@media (min-width: 600px) { .cta-row { grid-auto-flow: column; justify-content: start; } .land .cta-row .btn { width: auto; padding: 14px 22px; } }
+.scene-copy :where(p) { margin: 0 0 var(--s3); max-width: 44ch; font-size: var(--fs-body); line-height: 1.5; }
+.kicker { margin: 0; max-width: none; font-family: var(--mono); font-size: var(--fs-kicker); line-height: 1.5; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lime); }
+.lede { margin: 0; max-width: 40ch; font-size: var(--fs-lede); line-height: 1.5; color: var(--mute); }
+.land .small { font-size: var(--fs-small); line-height: 1.5; color: var(--mute); }
+.week .small { font-size: var(--fs-body); }
+.cta-row { display: grid; gap: var(--s3); margin-top: var(--s6); }
+.cta-row + .small { margin: var(--s3) 0 0; }
+@media (min-width: 600px) { .cta-row { grid-auto-flow: column; justify-content: start; } .land .cta-row .btn { width: auto; padding: var(--s4) var(--s6); } }
 
 /* ---------- invite vs story ---------- */
 .invite { display: none; }
 html[data-invite] .invite { display: grid; }
 html[data-invite] .story { display: none; }
-.invite { justify-items: center; text-align: center; max-width: 480px; margin: 0 auto; padding: 24px 0 56px; min-height: 78svh; align-content: center; }
-.invite h1 { font-size: clamp(32px, 9vw, 46px); letter-spacing: -0.035em; line-height: 1.05; margin: 8px 0 12px; overflow-wrap: anywhere; }
-.invite h1 i, .hero h1 i { font-style: normal; color: var(--lime); }
-.invite-tik { margin-bottom: 8px; }
-.inv-code { margin-top: 20px; font-family: var(--mono); font-size: 13px; color: var(--mute); display: grid; gap: 4px; }
-.inv-code b { font-size: 34px; font-weight: 600; letter-spacing: 0.2em; color: var(--lime); }
-.invite .cta-row { width: 100%; justify-content: center; }
-.invite .note { max-width: 40ch; }
-.invite .text-link { margin-top: 14px; font-size: 15px; }
+.invite {
+  grid-template-columns: minmax(0, 480px); justify-content: center; justify-items: center; align-content: center; text-align: center;
+  min-height: calc(100svh - var(--nav-h) - var(--s16)); padding-top: var(--s6); padding-bottom: var(--s16);
+}
+.invite h1 { margin: var(--s2) 0 var(--s4); font-size: var(--fs-h2); line-height: 1.05; letter-spacing: -0.035em; overflow-wrap: anywhere; }
+.invite h1 i { font-style: normal; color: var(--lime); }
+.invite-tik { margin-bottom: var(--s2); }
+.inv-code { display: grid; gap: var(--s1); margin-top: var(--s6); font-family: var(--mono); font-size: var(--fs-cap); color: var(--mute); }
+.inv-code b { font-size: 36px; font-weight: 600; letter-spacing: 0.2em; color: var(--lime); }
+.invite .cta-row { width: 100%; }
+@media (min-width: 600px) { .invite .cta-row { justify-content: center; } }
+.invite .note { max-width: 40ch; margin-top: var(--s4); }
+.invite .text-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: var(--s2); font-size: var(--fs-small); }
 
 /* ---------- scenes ---------- */
-.scene { min-height: min(100svh, 920px); display: grid; align-content: center; gap: 32px; padding: 56px 0; }
+.scene { display: grid; align-content: center; gap: var(--s8); padding-top: calc(var(--rhythm) / 2); padding-bottom: calc(var(--rhythm) / 2); }
+/* Desktop: copy and stage side by side, top-aligned so the kicker sits level with its day on the thread. Beside a
+   tall stack of phones the copy stays in view (sticky) instead of floating in empty space. */
 @media (min-width: 900px) {
-  .scene { grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; }
+  .scene { grid-template-columns: 1fr 1fr; align-items: start; column-gap: var(--s16); }
   .scene.flip-side .scene-copy { order: 2; }
+  .week .scene-copy { position: sticky; top: calc(var(--nav-h) + var(--rhythm) / 2); }
+  .scene.cta { grid-template-columns: minmax(0, 1fr); }
+  .opening { align-items: center; }
 }
-.scene-copy h2 { font-size: clamp(34px, 8.5vw, 54px); letter-spacing: -0.035em; line-height: 1.02; margin: 8px 0 14px; }
-.scene-copy p { font-size: 17px; line-height: 1.5; margin: 0 0 10px; max-width: 44ch; }
+.scene-copy h2 { margin: var(--s2) 0 var(--s4); font-size: var(--fs-h2); line-height: 1.02; letter-spacing: -0.035em; }
 .scene-stage { display: grid; justify-items: center; }
 
-.hero { min-height: calc(100svh - 70px); padding-top: 12px; }
-.hero h1 { font-size: clamp(46px, 13vw, 88px); letter-spacing: -0.045em; line-height: 0.95; margin: 10px 0 16px; }
-.hero .scene-stage { order: -1; }
-@media (min-width: 900px) { .hero .scene-stage { order: 0; } }
+/* The opening fills the first screen minus a peek of the week below it. */
+.opening { min-height: calc(100svh - var(--nav-h) - var(--s24)); padding-top: var(--s4); }
+.opening h1 { margin: var(--s2) 0 var(--s4); font-size: var(--fs-hero); line-height: 0.95; letter-spacing: -0.045em; }
+.opening .scene-stage { order: -1; }
+@media (min-width: 900px) { .opening .scene-stage { order: 0; } }
 .hero-tik .tik { width: clamp(150px, 44vw, 300px) !important; height: clamp(150px, 44vw, 300px) !important; }
-.scroll-cue { grid-column: 1 / -1; justify-self: center; font-family: var(--mono); font-size: 12px; color: var(--mute); text-decoration: none; padding: 8px; }
+.land .scroll-cue { grid-column: 1 / -1; justify-self: start; display: inline-flex; align-items: center; min-height: 44px; font-family: var(--mono); font-size: var(--fs-cap); color: var(--mute); text-decoration: none; }
 
-/* devices */
-.phone, .lock { margin: 0; width: 100%; max-width: 360px; border: 1px solid var(--line); border-radius: 32px; padding: 14px 12px 16px; background: var(--bg); position: relative; }
-.phone .card { margin-top: 8px; }
+/* ---------- the week thread ---------- */
+/* A thin line in the left gutter from the pact to the round's end, with a dot for each day. The fill and the riding
+   Tik are sticky at the observer's line (70% down the screen): the thread scrolls past underneath them, so Tik
+   walks the week with no script, parks at the start before you get there and at the end after. */
+.week { position: relative; }
+.thread {
+  position: absolute; left: var(--thread-x); top: calc(var(--rhythm) / 2 + var(--s2)); bottom: calc(var(--rhythm) / 2);
+  width: 2px; translate: -50% 0; overflow: visible clip; pointer-events: none;
+}
+.thread::before { content: ""; position: absolute; inset: 0; border-radius: 2px; background: rgb(242 240 232 / 0.12); }
+.thread-fill { position: sticky; top: 70svh; display: block; height: 0; }
+.thread-fill::before { content: ""; position: absolute; left: 0; bottom: 0; width: 2px; height: 20000px; /* taller than any week; the thread clips it */ background: var(--lime); }
+.thread-tik {
+  position: sticky; z-index: 3; top: calc(70svh - var(--tik-ride) / 2); display: block;
+  width: var(--tik-ride); height: var(--tik-ride); margin: calc(var(--tik-ride) / -2) 0 0 calc(var(--tik-ride) / -2 + 1px);
+}
+.thread-tik .tik { position: absolute; inset: 0; width: 100% !important; height: 100% !important; opacity: 0; transition: opacity 200ms ease; }
+.thread-tik .m-proud { opacity: 1; }
+/* Tik's mood follows the week: nudging in the afternoon, sweating at 9pm, collecting after the miss, proud at the end. */
+.week:has(.mk-nudge[data-on]) .thread-tik .m-proud { opacity: 0; }
+.week:has(.mk-nudge[data-on]) .thread-tik .m-nudge { opacity: 1; }
+.week:has(.mk-9[data-on]) .thread-tik .m-nudge { opacity: 0; }
+.week:has(.mk-9[data-on]) .thread-tik .m-ticking { opacity: 1; }
+.week:has(.mk-thu[data-on]) .thread-tik .m-ticking { opacity: 0; }
+.week:has(.mk-thu[data-on]) .thread-tik .m-collector { opacity: 1; }
+.week:has(.mk-sun[data-on]) .thread-tik .m-collector { opacity: 0; }
+.week:has(.mk-sun[data-on]) .thread-tik .m-proud { opacity: 1; }
+
+/* Day markers sit in their scene, level with its kicker (or near its end: two days pass between scenes). */
+.wk {
+  position: absolute; z-index: 1; left: var(--thread-x); top: var(--wk-y, calc(var(--rhythm) / 2 + var(--s2))); translate: -50% -50%;
+  display: grid; place-items: center; width: var(--mark); height: var(--mark); border-radius: 50%;
+  background: var(--bg); box-shadow: inset 0 0 0 1.5px rgb(242 240 232 / 0.24); pointer-events: none;
+}
+.wk::before, .wk::after { content: attr(data-wk); grid-area: 1 / 1; font: 600 9px/1 var(--mono); }
+.wk::after { color: var(--mute); }
+.wk::before {
+  z-index: 1; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--lime); color: var(--bg);
+  opacity: 0; transform: scale(0.8); transition: opacity 200ms ease, transform 250ms var(--ease-out);
+}
+.wk[data-on]::before { opacity: 1; transform: none; }
+.wk.dot { --mark: 8px; }
+.wk.late { --wk-y: calc(100% - var(--rhythm)); }
+.wk.later { --wk-y: calc(100% - var(--rhythm) / 4); }
+.wk.end { --wk-y: calc(100% - var(--rhythm) / 2); }
+@media (min-width: 900px) { .wk::before, .wk::after { font-size: 10px; } }
+@media (orientation: landscape) and (max-height: 500px) { .thread, .wk { display: none; } }
+
+/* ---------- devices ---------- */
+.phone, .lock { position: relative; width: 100%; max-width: 360px; margin: 0; padding: var(--s3) var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--s8); background: var(--bg); }
+.phone .card { margin-top: var(--s2); }
 .device-label { font-family: var(--mono); font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.08em; text-align: center; }
-.lock { text-align: center; padding-bottom: 18px; background: radial-gradient(120% 70% at 50% 0%, #262620 0%, #141411 55%, var(--bg) 100%); }
-.lock-time { font-size: 58px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; margin-top: 8px; }
-.lock-day { color: var(--mute); font-size: 14px; margin: 6px 0 16px; }
-.notif { display: flex; gap: 10px; text-align: left; background: rgba(52, 52, 47, 0.92); border-radius: 20px; padding: 11px 12px; font-size: 14px; line-height: 1.35; }
+.lock { text-align: center; padding-bottom: var(--s5); background: radial-gradient(120% 70% at 50% 0%, #262620 0%, #141411 55%, var(--bg) 100%); }
+.lock-time { margin-top: var(--s2); font-size: 58px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.lock-day { margin: var(--s2) 0 var(--s4); color: var(--mute); font-size: 14px; }
+.notif { display: flex; gap: var(--s3); padding: var(--s3); border-radius: var(--s5); text-align: left; background: rgba(52, 52, 47, 0.92); font-size: 14px; line-height: 1.35; }
 .notif b { display: block; font-size: 15px; }
 .notif span { color: #d3d1c7; overflow-wrap: anywhere; }
-.notif-app { font-size: 12px; color: #a3a196; margin-bottom: 1px; }
-.notif-icon { flex: none; width: 36px; height: 36px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line); display: grid; place-items: center; }
+.notif-app { margin-bottom: 1px; font-size: 12px; color: #a3a196; }
+.notif-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line); }
 
-.duo, .stack { display: grid; gap: 14px; justify-items: center; width: 100%; max-width: 380px; }
+.duo, .stack { display: grid; gap: var(--s4); justify-items: center; width: 100%; max-width: 380px; }
 .stack .card { width: 100%; margin: 0; }
-.blk { display: grid; gap: 14px; justify-items: center; width: 100%; }
-.side-tik { justify-self: end; margin: -34px 6px -30px 0; position: relative; z-index: 2; pointer-events: none; }
-.big-tik { margin-top: 4px; }
-.mock { width: 100%; max-width: 380px; margin: 0; position: relative; }
+.blk { display: grid; gap: var(--s4); justify-items: center; width: 100%; }
+.side-tik { position: relative; z-index: 2; justify-self: end; margin: calc(var(--s8) * -1) var(--s2) calc(var(--s8) * -1) 0; pointer-events: none; }
+.big-tik { margin-top: var(--s1); }
+.mock { position: relative; width: 100%; max-width: 380px; margin: 0; }
+.mock > .btn.small { margin-top: var(--s3); }
+.ftasks { margin-top: var(--s3); }
+.ledger-grid { margin-top: var(--s4); }
+.next-round { display: block; margin-top: var(--s4); text-align: center; }
 
-.pact { display: grid; gap: 16px; justify-items: center; width: 100%; max-width: 380px; }
-.pact-cards { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; }
-.pact-cards .card { margin: 0; text-align: center; padding: 16px 10px; min-width: 0; }
+.pact { display: grid; gap: var(--s4); justify-items: center; width: 100%; max-width: 380px; }
+.pact-cards { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--s2); width: 100%; }
+.pact-cards .card { min-width: 0; margin: 0; padding: var(--s4) var(--s3); text-align: center; }
 .pact-cards .name { font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
-.pact-cards .sub { margin-top: 4px; }
+.pact-cards .sub { margin-top: var(--s1); }
 .vs { font-family: var(--mono); color: var(--mute); font-size: 13px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s2); }
+.chips .chip { background: var(--card); } /* as on the app's cards: keeps 12px text above AA on any glow */
 
-.choice .opt { position: relative; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card2); }
+.choice .opt { position: relative; padding: var(--s3) var(--s4); border-radius: var(--s3); border: 1px solid var(--line); background: var(--card2); text-align: left; }
 .choice .opt b { display: block; font-size: 15px; }
 .choice .opt span { font-size: 13px; color: var(--mute); }
-.choice .sel { position: absolute; inset: -1px; border-radius: 12px; border: 1px solid var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+.choice .sel { position: absolute; inset: -1px; border-radius: var(--s3); border: 1px solid var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
 
 .box { position: relative; }
-.box-fill { position: absolute; inset: -2px; border-radius: 9px; background: var(--lime); color: var(--bg); display: grid; place-items: center; }
-.progress .bar { display: block; height: 100%; background: var(--lime); border-radius: 99px; transform-origin: left center; }
+.box-fill { position: absolute; inset: -2px; display: grid; place-items: center; border-radius: 9px; background: var(--lime); color: var(--bg); }
+.progress .bar { display: block; height: 100%; border-radius: 99px; background: var(--lime); transform-origin: left center; }
 .cell-stack { display: grid; }
 .cell-stack > .cell { grid-area: 1 / 1; }
 .flip { display: grid; perspective: 700px; }
@@ -106,44 +323,48 @@ html[data-invite] .story { display: none; }
 .xfade > span { grid-area: 1 / 1; }
 .xf-a { opacity: 0; }
 
-.upi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 16px; border: 1px dashed var(--line); background: transparent; font-size: 14px; }
+.upi { display: flex; align-items: center; gap: var(--s3); width: 100%; padding: var(--s3) var(--s4); border-radius: var(--s4); border: 1px dashed var(--line); background: transparent; font-size: 14px; }
 .upi b { display: block; font-size: 15px; }
 .upi span:not(.upi-tick) { color: var(--mute); }
-.upi-tick { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--lime); color: var(--bg); display: grid; place-items: center; font-weight: 700; }
+.upi-tick { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--lime); color: var(--bg); font-weight: 700; }
 
-.cta { text-align: center; justify-items: center; align-content: center; min-height: 80svh; }
-.cta h2 { font-size: clamp(40px, 11vw, 72px); letter-spacing: -0.04em; line-height: 1; margin: 10px 0 12px; }
+/* ---------- final CTA: the end of the story ---------- */
+.cta { justify-items: center; text-align: center; }
+.cta h2 { margin: var(--s2) 0 var(--s4); font-size: var(--fs-h1); line-height: 1; letter-spacing: -0.04em; }
 .cta .cta-row { justify-content: center; width: 100%; max-width: 420px; }
 @media (min-width: 600px) { .cta .cta-row { max-width: none; } }
 
 /* ---------- install + faq ---------- */
-.info { padding: 56px 0 8px; }
-.info > h2 { font-size: clamp(30px, 7vw, 44px); letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 10px; }
-.info > .note { max-width: 60ch; }
-.install { display: grid; gap: 12px; margin-top: 18px; }
+.info { padding-top: calc(var(--rhythm) / 2); padding-bottom: calc(var(--rhythm) / 2); }
+.info > h2 { margin: 0 0 var(--s4); font-size: var(--fs-h3); line-height: 1.05; letter-spacing: -0.03em; }
+.info > .note { max-width: 60ch; margin-top: var(--s3); }
+.install { display: grid; gap: var(--s3); margin-top: var(--s6); }
 @media (min-width: 760px) { .install { grid-template-columns: 1fr 1fr; } }
 .install .card { margin: 0; }
-.install h3 { margin: 0 0 6px; font-size: 20px; display: flex; gap: 8px; align-items: baseline; }
-.install h3 span { font-family: var(--mono); font-size: 12px; color: var(--mute); font-weight: 400; }
-.install ol { list-style: none; margin: 0; padding: 0; counter-reset: step; }
-.install li { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.45; }
+.install h3 { display: flex; align-items: baseline; gap: var(--s2); margin: 0 0 var(--s2); font-size: 20px; }
+.install h3 span { font-family: var(--mono); font-size: var(--fs-cap); font-weight: 400; color: var(--mute); }
+.install ol { list-style: none; margin: 0; padding: 0; }
+.install li { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.45; }
 .install li:first-child { border-top: 0; }
-.glyph { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--card2); border: 1px solid var(--line); display: grid; place-items: center; font-size: 20px; color: var(--ink); }
+.glyph { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--s3); background: var(--card2); border: 1px solid var(--line); font-size: 20px; color: var(--ink); }
 .app-glyph { background: var(--bg); }
-.pill-btn { font-size: 10px; font-weight: 700; background: var(--lime); color: var(--bg); padding: 4px 6px; border-radius: 6px; }
+.pill-btn { padding: var(--s1) 6px; border-radius: 6px; background: var(--lime); color: var(--bg); font-size: 10px; font-weight: 700; }
 
-.faq { display: grid; gap: 8px; margin-top: 14px; }
-.faq details { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 0 16px; }
-.faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; gap: 12px; }
+.faq { display: grid; gap: var(--s2); margin-top: var(--s6); }
+.faq details { padding: 0 var(--s4); border-radius: var(--s4); border: 1px solid var(--line); background: var(--card); }
+.faq summary { display: flex; justify-content: space-between; gap: var(--s3); padding: var(--s4) 0; list-style: none; cursor: pointer; font-size: 16px; font-weight: 700; }
 .faq summary::-webkit-details-marker { display: none; }
 .faq summary::after { content: "+"; font-family: var(--mono); color: var(--lime); transition: transform 200ms var(--ease-out); }
 .faq details[open] summary::after { transform: rotate(45deg); }
-.faq p { margin: 0 0 16px; color: var(--mute); font-size: 15px; line-height: 1.55; }
+.faq p { margin: 0 0 var(--s4); color: var(--mute); font-size: 15px; line-height: 1.55; }
 
-.foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 40px 0 calc(28px + env(safe-area-inset-bottom)); margin-top: 32px; border-top: 1px solid var(--line); font-size: 14px; }
-.foot-logo { font-size: 22px; }
-.foot-tag { color: var(--mute); flex: 1; }
-.foot p { flex-basis: 100%; margin: 0; color: var(--mute); font-size: 13px; }
+/* ---------- footer: Tik, the wordmark and the closing line ---------- */
+.foot { display: grid; justify-items: center; gap: var(--s3); text-align: center; padding-top: calc(var(--rhythm) / 2); padding-bottom: calc(var(--s8) + env(safe-area-inset-bottom, 0px)); }
+.foot-logo { font-size: 40px; }
+.foot-tag { margin-top: var(--s2); font-size: var(--fs-h3); font-weight: 700; line-height: 1.05; letter-spacing: -0.035em; }
+.foot p { margin: 0; font-size: var(--fs-small); color: var(--mute); }
+.land .foot .foot-login { display: inline-flex; align-items: center; width: auto; min-height: 44px; margin-top: var(--s3); padding: 0 var(--s6); font-size: 15px; border-radius: var(--s3); }
+@media (max-width: 899px) { html:not([data-invite]) .foot { padding-bottom: calc(var(--s8) + var(--dock-h) + env(safe-area-inset-bottom, 0px)); } }
 
 /* ---------- motion ---------- */
 .tk * { transform-box: fill-box; }
@@ -152,6 +373,9 @@ html[data-invite] .story { display: none; }
 html[data-motion] [data-scene]:not([data-in]) :is(.rv, .rv-x, .notif, .box-fill, .bar, .sel, .flip-back, .flip-in, .xfade, .xf-b) { opacity: 0; }
 html[data-motion] [data-scene]:not([data-in]) :is(.flip-front, .xf-a) { opacity: 1; }
 
+/* Every scene enters the same way: kicker (0ms), heading (40ms, the lead, rises furthest), body (120ms), secondary
+   line (180ms), then the stage's lead at 280ms, once the heading has mostly landed: one clear mover at a time. The
+   story beats inside each mock (a tick, a notification, a flip) follow as cause and effect. */
 html[data-motion] [data-in] .rv { animation: rv 650ms var(--ease-out) var(--d, 0ms) both; }
 html[data-motion] [data-in] .rv-x { animation: rvx 650ms var(--ease-out) var(--d, 0ms) both; }
 html[data-motion] [data-in] .notif { animation: notif 520ms var(--ease-out) var(--d, 0ms) both; }
@@ -215,3 +439,14 @@ html[data-motion] .tk:not(.still) .tk-z { animation: tk-z 2.4s linear infinite; 
 @keyframes tk-flip { 0%, 70%, 100% { transform: scaleX(1); } 77% { transform: scaleX(0.12); } 84% { transform: scaleX(1); } }
 @keyframes tk-breathe { from { transform: scale(1, 1); } to { transform: scale(1.015, 0.975); } }
 @keyframes tk-z { 0% { opacity: 0; transform: translate(0, 0); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -7px); } }
+
+/* ---------- reduced motion: no parallax, no riding Tik, the thread filled, instant changes ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .thread::before { background: var(--lime); }
+  .thread-fill { display: none; }
+  .thread-tik { position: absolute; top: auto; bottom: calc(var(--mark) / 2); margin-top: 0; }
+  .thread-tik .tik { opacity: 0 !important; transition: none; }
+  .thread-tik .m-proud { opacity: 1 !important; }
+  .wk::before { opacity: 1; transform: none; transition: none; }
+  .nav::before, .dock, .land .nav-actions .nav-cta { transition: none !important; }
+}
