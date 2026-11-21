@@ -99,6 +99,9 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 | Icons + OG image | Rendered with resvg; badge checked as a white silhouette with the face cut out | ✅ |
 | Per-platform banners | User-agent emulation: iPhone Safari/Chrome/Edge/Firefox, iOS 16.3, iPhone home screen, Instagram, iOS webview, Android WebView, Facebook, Android Chrome/Firefox/Samsung, desktop Chrome/Edge/Firefox/Safari | ✅ right text each; desktop never told to install |
 | In-app Copy link | Clipboard read back after tapping Copy link | ✅ `/?join=CODE` kept |
+| New domain cticks.vercel.app (21 Nov) | curl + headless Chrome after deploy `c369cce`: `/`, `/app`, invite 200; og:image `https://cticks.vercel.app/og.png`; manifest `cTicks`, id `/`, start_url `/app`; service worker 200 with the `payup-c1ee8` config and `openWindow('/app')`; both crons 401 with no or a wrong secret; `/api/notify` 401; `/app` registers the SW on the new origin, no console errors. The authorised cron call was skipped because it would have pushed to the 3 real players | ✅ |
+| Old domain redirect | `payup-xi.vercel.app/?join=K7XQ2M&from=Shanayaa`, `/app`, `/login?join=…`, the SW: all 308 to the same path + query on cticks.vercel.app; in Chrome the old invite link shows the card with "Shanayaa" and code `K7XQ2M` | ✅ |
+| Auto-deploy after the Vercel rename | Push of `c369cce` to `main` → production deploy READY on project `cticks` | ✅ |
 
 ## 3. Not tested yet ⚠️ (needs real phones)
 
