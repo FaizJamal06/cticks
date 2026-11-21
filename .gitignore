@@ -10,3 +10,6 @@ service-account*.json
 public/*.png
 *firebase-adminsdk*.json
 *-debug.log
+
+# Playwright MCP screenshots/logs
+.playwright-mcp/
