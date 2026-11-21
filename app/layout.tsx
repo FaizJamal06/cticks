@@ -4,7 +4,7 @@ import "./globals.css";
 const TAGLINE = "Tick it or pay for it.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://payup-xi.vercel.app"),
+  metadataBase: new URL("https://cticks.vercel.app"),
   title: `cTicks · ${TAGLINE}`,
   description: "Pick daily tasks with friends. Tick them off before midnight or pay up. Free, for 2 to 6 people.",
   appleWebApp: { capable: true, title: "cTicks", statusBarStyle: "black-translucent" },

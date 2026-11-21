@@ -8,7 +8,7 @@
 - the **✓** you tick off every day, and
 - the **clock ticking** toward midnight, when today's tasks lock in.
 
-Formerly "Pay Up". Firebase, Firestore paths, `payup.*` storage keys, the Vercel domain and the repo keep the old name on purpose.
+Formerly "Pay Up". The site is <https://cticks.vercel.app> (the old `payup-xi.vercel.app` redirects there). The Firebase project, Firestore paths and `payup.*` storage keys keep the old name on purpose, so no data moves.
 
 ## Tagline
 

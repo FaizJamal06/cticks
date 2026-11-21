@@ -2,17 +2,23 @@
 
 _Last updated: 21 Nov 2026. Update this file whenever something gets done, tested or found broken._
 
-**State in one line:** rebranded to cTicks with a landing page at `/` and the app at `/app`; deployed and verified in browsers, including real push delivery. Next: the on-phone test plan (section 4).
+**State in one line:** cTicks lives at <https://cticks.vercel.app> (landing at `/`, app at `/app`); the old domain redirects there. Next: the one-time phone migration, then the on-phone test plan (both in section 4).
 
 | | |
 |---|---|
-| Live site | <https://payup-xi.vercel.app> (landing) · <https://payup-xi.vercel.app/app> (the app) |
+| Live site | <https://cticks.vercel.app> (landing) · <https://cticks.vercel.app/app> (the app) |
+| Old domain | `payup-xi.vercel.app` stays attached and 308-redirects to cticks.vercel.app, keeping the path and query (old `?join=` links still work) |
 | Firebase project | `payup-c1ee8` (Firestore `asia-south1`, Spark plan) |
-| Vercel project | `payup`, auto-deploys `main` from `FaizJamal06/payup`, Node 24.x |
+| Vercel project | `cticks`, auto-deploys `main` from `FaizJamal06/payup`, Node 24.x |
 | Crons | `/api/cron/reminder` 15:30 UTC (~9pm IST), `/api/cron/results` 03:30 UTC (~9am IST) |
 | Secrets | `.env.local` (git-ignored) and Vercel Production env. Service account JSON lives outside the repo |
 
 ## 1. Done ✅
+
+**Domain move (21 Nov 2026)**
+- [x] Vercel project renamed `payup` → `cticks`; `cticks.vercel.app` added and made the main domain; `payup-xi.vercel.app` kept as a 308 redirect (path + query kept)
+- [x] `metadataBase` (link previews, OG image URL) points at cticks.vercel.app. Share links, the service worker and FCM links use the page's own origin, so they follow the domain by themselves
+- [x] Crons are unaffected: Vercel calls them on the deployment's own URL, not a domain
 
 **Rebrand + landing page (21 Nov 2026)**
 - [x] Renamed to **cTicks** everywhere users see it (manifest, titles, logo, auth screen, push text, invite share text, banners). Firebase project, Firestore paths, `payup.*` localStorage keys, Vercel domain and GitHub repo unchanged
@@ -124,9 +130,29 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 ## 4. To do: your next steps 📋
 
 **Setup:** done (Firebase project, rules, auth, FCM, Vercel, env, authorized domain).
+- [ ] Firebase Auth → Authorized domains: add `cticks.vercel.app` (console only; the CLI can't). Keep `payup-xi.vercel.app` in the list, it's harmless
+- [ ] GitHub repo rename `payup` → `cticks` (Settings → General → Repository name), then update the git remote and check the next push still auto-deploys
+
+**One-time migration to cticks.vercel.app (21 Nov 2026), on every phone that had the old app:**
+
+The old app lived on `payup-xi.vercel.app`. A browser treats a new domain as a different site, so the old install can't follow: it now just opens the new site in a browser view, and its login and notification setup stay behind. Your challenge, tasks, ticks and money are in Firebase and carry over untouched.
+
+Android (Chrome):
+1. [ ] Uninstall the old app: long-press its icon → **Uninstall** (or App info → Uninstall)
+2. [ ] Stop the old site's notifications, or you'll get every push twice: Chrome → ⋮ → **Settings** → **Site settings** → **All sites** → `payup-xi.vercel.app` → **Clear & reset** (newer Chrome: **Delete data and reset permissions**) → confirm
+3. [ ] In Chrome open <https://cticks.vercel.app> → **Log in** → in the app tap **Install** on the banner (or ⋮ → **Install app** / **Add to Home screen**)
+4. [ ] Open cTicks from the new icon → **Turn on notifications** → **Allow**
+
+iPhone (Safari):
+1. [ ] Delete the old app: long-press its icon → **Remove App** → **Delete** (its login and notification setup go with it)
+2. [ ] In **Safari** open <https://cticks.vercel.app> → Share → **Add to Home Screen** → **Add**
+3. [ ] Open cTicks **from the new icon** → **Log in** (the home-screen app doesn't share Safari's login)
+4. [ ] **Turn on notifications** → **Allow**
+
+Then one of you ticks a task and the other should get the push once. Expect the activity feed to show everything as "new" one time, and the nudge cooldown to reset (both are kept per site, on the phone). Old invite links keep working; new Share invite links use cticks.vercel.app automatically.
 
 **On-phone test plan (do in order, tick as you go):**
-1. [ ] Android: open <https://payup-xi.vercel.app> in Chrome → the landing page → **Start your first round** → Install → sign up → create challenge (start **Today** so you can tick)
+1. [ ] Android: open <https://cticks.vercel.app> in Chrome → the landing page → **Start your first round** → Install → sign up → create challenge (start **Today** so you can tick)
 2. [ ] Android: Turn on notifications → allowed
 3. [ ] iPhone: open the invite link **in Safari** (from WhatsApp: tap the compass / Open in Safari) → it shows "<your name> challenged you on cTicks" → Share → Add to Home Screen → open from the icon
 4. [ ] iPhone: sign up → Join with code (type the code if it isn't pre-filled; the home-screen app may not get the link) → Android gets a "joined" push
@@ -136,13 +162,12 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 8. [ ] Nudge → only the other phone gets it. Nudge again right away → "recently" toast
 9. [ ] Untick + re-tick → no second push
 10. [ ] Tap a notification → the app opens
-11. [ ] Fire the 9pm reminder by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://payup-xi.vercel.app/api/cron/reminder` → the player with open tasks gets it. Without the header → 401
+11. [ ] Fire the 9pm reminder by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://cticks.vercel.app/api/cron/reminder` → the player with open tasks gets it. Without the header → 401
 12. [ ] Same for `/api/cron/results` (sends only after a round day has finished)
 13. [ ] Log out on one phone → it stops getting pushes; log back in → it gets them again
 14. [ ] Next morning: the real 9am push arrived and the grid shows yesterday as ✓/✗
 15. [ ] Mixed group: add a desktop browser (third account or your second device) and check every action reaches every other device
-16. [ ] Phones installed before the rebrand: the old icon still opens the app (lands on `/`, which forwards to `/app`). Re-install to get the new Tik icon and name
-17. [ ] Paste the live link into WhatsApp: the preview shows Tik, "cTicks" and the tagline
+16. [ ] Paste the live link into WhatsApp: the preview shows Tik, "cTicks" and the tagline
 
 ## 5. Known limitations / risks
 
@@ -168,7 +193,8 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 - **`npm audit`** flags `@grpc/grpc-js` under firebase; the only "fix" is downgrading firebase.
 
 - **`/` forwards signed-in people using a `payup.auth` flag** the app sets in localStorage. Someone signed in from before the rebrand who opens `/` in a browser sees the landing page once; tapping Log in takes them into the app, which sets the flag.
-- **Installed icons don't update by themselves.** Phones that installed Pay Up keep the old icon and name until they re-install. They still work: `/` forwards to `/app`.
+- **Installs from `payup-xi.vercel.app` stopped being the app** when the domain moved: they open the new site in a browser view. Re-install from cticks.vercel.app (migration steps in section 4).
+- **Push tokens from the old domain stay in `users/{uid}.fcmTokens`** until FCM rejects them. While the old site still has notification permission on a phone, that phone gets each push twice (once via the old site). Clearing the old site's data, or deleting the old iPhone app, kills the token and the next push prunes it.
 - **The landing story is hand-written copy** that mirrors the app's real push text and screens. If notification wording or the UI changes, update `app/page.tsx` and `docs/WEBSITE_COPY.md` to match.
 - **Landing JS is the Next/React runtime (~171 KB gz).** Our own landing code is three small inline scripts. Going lower would mean serving `/` as plain HTML outside Next.
 - **The friend's name on the invite page comes from the link** (`&from=`), not the database, so anyone can craft a link with any name. It's shown as plain text and the code is still checked on join.
