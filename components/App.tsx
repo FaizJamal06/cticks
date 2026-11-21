@@ -22,7 +22,11 @@ export default function App() {
     const code = new URLSearchParams(location.search).get("join");
     if (code) try { sessionStorage.setItem("payup.join", code.toUpperCase()); } catch {}
     if (!auth) return;
-    return onAuthStateChanged(auth, setUser);
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      // Lets the landing page at "/" send signed-in people straight here before it paints.
+      try { if (u) localStorage.setItem("payup.auth", "1"); else localStorage.removeItem("payup.auth"); } catch {}
+    });
   }, []);
 
   useEffect(() => {

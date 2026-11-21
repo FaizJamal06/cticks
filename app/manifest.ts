@@ -2,10 +2,12 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pay Up — accountability with stakes",
-    short_name: "Pay Up",
-    description: "Do your daily tasks or pay your friend.",
-    start_url: "/",
+    // id stays "/" (what older installs got from start_url "/"), so Chrome keeps treating them as the same app.
+    id: "/",
+    name: "cTicks",
+    short_name: "cTicks",
+    description: "Tick it or pay for it.",
+    start_url: "/app",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

@@ -24,8 +24,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const c of all) { if ('focus' in c) return c.focus(); }
-    return self.clients.openWindow('/');
+    const open = all.find((c) => new URL(c.url).pathname.startsWith('/app'));
+    if (open && 'focus' in open) return open.focus();
+    return self.clients.openWindow('/app');
   })());
 });
 `;

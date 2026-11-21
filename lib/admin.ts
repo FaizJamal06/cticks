@@ -31,7 +31,7 @@ export async function pushTo(uids: string[], msg: { title: string; body: string;
     data: { kind: msg.kind || "event" },
     webpush: {
       notification: { icon: "/icon-192.png", badge: "/badge-72.png" },
-      fcmOptions: { link: "/" },
+      fcmOptions: { link: "/app" },
     },
   });
 
