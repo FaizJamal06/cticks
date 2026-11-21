@@ -1,11 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const TAGLINE = "Tick it or pay for it.";
+
 export const metadata: Metadata = {
-  title: "Pay Up",
-  description: "Do your daily tasks or pay your friend.",
-  appleWebApp: { capable: true, title: "Pay Up", statusBarStyle: "black-translucent" },
-  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  metadataBase: new URL("https://payup-xi.vercel.app"),
+  title: `cTicks · ${TAGLINE}`,
+  description: "Pick daily tasks with friends. Tick them off before midnight or pay up. Free, for 2 to 6 people.",
+  appleWebApp: { capable: true, title: "cTicks", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/favicon-32.png", sizes: "32x32", type: "image/png" }],
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "cTicks",
+    title: `cTicks · ${TAGLINE}`,
+    description: "Daily tasks, friends watching, money on the line. Miss a day, pay your friend.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: `Tik the mascot and the cTicks logo. ${TAGLINE}` }],
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
@@ -17,7 +31,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // The landing page's inline script sets data-* flags on <html> before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

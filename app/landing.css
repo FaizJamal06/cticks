@@ -1,0 +1,217 @@
+/* Landing page (/). The mocks reuse the app's own classes from globals.css, so they look exactly like the product.
+   Motion rule: the final state is the default. html[data-motion] (JS on, motion OK) arms the "before" state,
+   and [data-in] on a scene plays its entrance once. transform/opacity only. */
+
+html[data-leaving] body { visibility: hidden; }
+
+.land {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-io: cubic-bezier(0.77, 0, 0.175, 1);
+  max-width: 1120px; margin: 0 auto;
+  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  overflow-x: clip;
+}
+.land a:not(.btn) { color: inherit; }
+.land a.btn { display: block; text-align: center; text-decoration: none; transition: transform 160ms var(--ease-out); }
+.land a.btn:active { transform: scale(0.97); }
+.land .f { display: block; margin-top: 14px; font-size: 13px; color: var(--mute); font-family: var(--mono); }
+.land .mock .input { font-family: var(--sans); color: var(--ink); }
+.land .row2 .f { display: flex; flex-direction: column; justify-content: space-between; }
+
+.nav { display: flex; justify-content: space-between; align-items: center; padding: calc(14px + env(safe-area-inset-top)) 0 6px; }
+.nav-logo { font-size: 26px; text-decoration: none; }
+.nav-link { font-size: 15px; text-decoration: none; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line); }
+@media (hover: hover) and (pointer: fine) { .nav-link:hover { border-color: var(--mute); } }
+
+.kicker { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lime); margin: 0; }
+.lede { color: var(--mute); font-size: 18px; line-height: 1.5; margin: 0; max-width: 40ch; }
+.small { color: var(--mute); font-size: 14px; line-height: 1.5; }
+.small a, .text-link { color: var(--lime); }
+.cta-row { display: grid; gap: 10px; margin-top: 22px; }
+@media (min-width: 600px) { .cta-row { grid-auto-flow: column; justify-content: start; } .land .cta-row .btn { width: auto; padding: 14px 22px; } }
+
+/* ---------- invite vs story ---------- */
+.invite { display: none; }
+html[data-invite] .invite { display: grid; }
+html[data-invite] .story { display: none; }
+.invite { justify-items: center; text-align: center; max-width: 480px; margin: 0 auto; padding: 24px 0 56px; min-height: 78svh; align-content: center; }
+.invite h1 { font-size: clamp(32px, 9vw, 46px); letter-spacing: -0.035em; line-height: 1.05; margin: 8px 0 12px; overflow-wrap: anywhere; }
+.invite h1 i, .hero h1 i { font-style: normal; color: var(--lime); }
+.invite-tik { margin-bottom: 8px; }
+.inv-code { margin-top: 20px; font-family: var(--mono); font-size: 13px; color: var(--mute); display: grid; gap: 4px; }
+.inv-code b { font-size: 34px; font-weight: 600; letter-spacing: 0.2em; color: var(--lime); }
+.invite .cta-row { width: 100%; justify-content: center; }
+.invite .note { max-width: 40ch; }
+.invite .text-link { margin-top: 14px; font-size: 15px; }
+
+/* ---------- scenes ---------- */
+.scene { min-height: min(100svh, 920px); display: grid; align-content: center; gap: 32px; padding: 56px 0; }
+@media (min-width: 900px) {
+  .scene { grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; }
+  .scene.flip-side .scene-copy { order: 2; }
+}
+.scene-copy h2 { font-size: clamp(34px, 8.5vw, 54px); letter-spacing: -0.035em; line-height: 1.02; margin: 8px 0 14px; }
+.scene-copy p { font-size: 17px; line-height: 1.5; margin: 0 0 10px; max-width: 44ch; }
+.scene-stage { display: grid; justify-items: center; }
+
+.hero { min-height: calc(100svh - 70px); padding-top: 12px; }
+.hero h1 { font-size: clamp(46px, 13vw, 88px); letter-spacing: -0.045em; line-height: 0.95; margin: 10px 0 16px; }
+.hero .scene-stage { order: -1; }
+@media (min-width: 900px) { .hero .scene-stage { order: 0; } }
+.hero-tik .tik { width: clamp(150px, 44vw, 300px) !important; height: clamp(150px, 44vw, 300px) !important; }
+.scroll-cue { grid-column: 1 / -1; justify-self: center; font-family: var(--mono); font-size: 12px; color: var(--mute); text-decoration: none; padding: 8px; }
+
+/* devices */
+.phone, .lock { margin: 0; width: 100%; max-width: 360px; border: 1px solid var(--line); border-radius: 32px; padding: 14px 12px 16px; background: var(--bg); position: relative; }
+.phone .card { margin-top: 8px; }
+.device-label { font-family: var(--mono); font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: 0.08em; text-align: center; }
+.lock { text-align: center; padding-bottom: 18px; background: radial-gradient(120% 70% at 50% 0%, #262620 0%, #141411 55%, var(--bg) 100%); }
+.lock-time { font-size: 58px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; margin-top: 8px; }
+.lock-day { color: var(--mute); font-size: 14px; margin: 6px 0 16px; }
+.notif { display: flex; gap: 10px; text-align: left; background: rgba(52, 52, 47, 0.92); border-radius: 20px; padding: 11px 12px; font-size: 14px; line-height: 1.35; }
+.notif b { display: block; font-size: 15px; }
+.notif span { color: #d3d1c7; overflow-wrap: anywhere; }
+.notif-app { font-size: 12px; color: #a3a196; margin-bottom: 1px; }
+.notif-icon { flex: none; width: 36px; height: 36px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line); display: grid; place-items: center; }
+
+.duo, .stack { display: grid; gap: 14px; justify-items: center; width: 100%; max-width: 380px; }
+.stack .card { width: 100%; margin: 0; }
+.blk { display: grid; gap: 14px; justify-items: center; width: 100%; }
+.side-tik { justify-self: end; margin: -34px 6px -30px 0; position: relative; z-index: 2; pointer-events: none; }
+.big-tik { margin-top: 4px; }
+.mock { width: 100%; max-width: 380px; margin: 0; position: relative; }
+
+.pact { display: grid; gap: 16px; justify-items: center; width: 100%; max-width: 380px; }
+.pact-cards { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; width: 100%; }
+.pact-cards .card { margin: 0; text-align: center; padding: 16px 10px; min-width: 0; }
+.pact-cards .name { font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+.pact-cards .sub { margin-top: 4px; }
+.vs { font-family: var(--mono); color: var(--mute); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+
+.choice .opt { position: relative; text-align: left; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card2); }
+.choice .opt b { display: block; font-size: 15px; }
+.choice .opt span { font-size: 13px; color: var(--mute); }
+.choice .sel { position: absolute; inset: -1px; border-radius: 12px; border: 1px solid var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+
+.box { position: relative; }
+.box-fill { position: absolute; inset: -2px; border-radius: 9px; background: var(--lime); color: var(--bg); display: grid; place-items: center; }
+.progress .bar { display: block; height: 100%; background: var(--lime); border-radius: 99px; transform-origin: left center; }
+.cell-stack { display: grid; }
+.cell-stack > .cell { grid-area: 1 / 1; }
+.flip { display: grid; perspective: 700px; }
+.flip > div { grid-area: 1 / 1; backface-visibility: hidden; }
+.flip-front { opacity: 0; } /* final state: the miss has landed */
+.xfade { display: inline-grid; }
+.xfade > span { grid-area: 1 / 1; }
+.xf-a { opacity: 0; }
+
+.upi { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 16px; border: 1px dashed var(--line); background: transparent; font-size: 14px; }
+.upi b { display: block; font-size: 15px; }
+.upi span:not(.upi-tick) { color: var(--mute); }
+.upi-tick { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--lime); color: var(--bg); display: grid; place-items: center; font-weight: 700; }
+
+.cta { text-align: center; justify-items: center; align-content: center; min-height: 80svh; }
+.cta h2 { font-size: clamp(40px, 11vw, 72px); letter-spacing: -0.04em; line-height: 1; margin: 10px 0 12px; }
+.cta .cta-row { justify-content: center; width: 100%; max-width: 420px; }
+@media (min-width: 600px) { .cta .cta-row { max-width: none; } }
+
+/* ---------- install + faq ---------- */
+.info { padding: 56px 0 8px; }
+.info > h2 { font-size: clamp(30px, 7vw, 44px); letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 10px; }
+.info > .note { max-width: 60ch; }
+.install { display: grid; gap: 12px; margin-top: 18px; }
+@media (min-width: 760px) { .install { grid-template-columns: 1fr 1fr; } }
+.install .card { margin: 0; }
+.install h3 { margin: 0 0 6px; font-size: 20px; display: flex; gap: 8px; align-items: baseline; }
+.install h3 span { font-family: var(--mono); font-size: 12px; color: var(--mute); font-weight: 400; }
+.install ol { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.install li { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.45; }
+.install li:first-child { border-top: 0; }
+.glyph { flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--card2); border: 1px solid var(--line); display: grid; place-items: center; font-size: 20px; color: var(--ink); }
+.app-glyph { background: var(--bg); }
+.pill-btn { font-size: 10px; font-weight: 700; background: var(--lime); color: var(--bg); padding: 4px 6px; border-radius: 6px; }
+
+.faq { display: grid; gap: 8px; margin-top: 14px; }
+.faq details { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 0 16px; }
+.faq summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; gap: 12px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--mono); color: var(--lime); transition: transform 200ms var(--ease-out); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq p { margin: 0 0 16px; color: var(--mute); font-size: 15px; line-height: 1.55; }
+
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 40px 0 calc(28px + env(safe-area-inset-bottom)); margin-top: 32px; border-top: 1px solid var(--line); font-size: 14px; }
+.foot-logo { font-size: 22px; }
+.foot-tag { color: var(--mute); flex: 1; }
+.foot p { flex-basis: 100%; margin: 0; color: var(--mute); font-size: 13px; }
+
+/* ---------- motion ---------- */
+.tk * { transform-box: fill-box; }
+.tk .tk-body { transform-origin: 50% 100%; }
+
+html[data-motion] [data-scene]:not([data-in]) :is(.rv, .rv-x, .notif, .box-fill, .bar, .sel, .flip-back, .flip-in, .xfade, .xf-b) { opacity: 0; }
+html[data-motion] [data-scene]:not([data-in]) :is(.flip-front, .xf-a) { opacity: 1; }
+
+html[data-motion] [data-in] .rv { animation: rv 650ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .rv-x { animation: rvx 650ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .notif { animation: notif 520ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .lock { animation: buzz 380ms linear var(--d, 0ms) both; }
+html[data-motion] [data-in] .box-fill { animation: pop 380ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .bar { animation: grow 600ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .sel { animation: fade 300ms ease var(--d, 0ms) both; }
+html[data-motion] [data-in] .press { animation: press 280ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .flip-front { animation: flip-out 260ms var(--ease-io) var(--d, 0ms) both; }
+html[data-motion] [data-in] :is(.flip-back, .flip-in) { animation: flip-in 380ms var(--ease-out) var(--d, 0ms) both; }
+html[data-motion] [data-in] .xfade { animation: rv 650ms var(--ease-out) var(--d, 0ms) both; --y: 12px; }
+html[data-motion] [data-in] .xf-a { animation: fade-out 240ms ease var(--s, 0ms) both; }
+html[data-motion] [data-in] .xf-b { animation: rv 420ms var(--ease-out) var(--s, 0ms) both; --y: 6px; }
+
+@keyframes rv { from { opacity: 0; transform: translateY(var(--y, 14px)); } }
+@keyframes rvx { from { opacity: 0; transform: translateX(var(--x, 0)); } }
+@keyframes notif { from { opacity: 0; transform: translateY(-36px) scale(0.96); } }
+@keyframes buzz {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-3px) rotate(-0.6deg); }
+  40% { transform: translateX(3px) rotate(0.6deg); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes pop { 0% { opacity: 0; transform: scale(0.85); } 60% { opacity: 1; transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes press { 45% { transform: scale(0.94); } }
+@keyframes flip-out { from { opacity: 1; transform: rotateX(0); } to { opacity: 0; transform: rotateX(90deg); } }
+@keyframes flip-in { from { opacity: 0; transform: rotateX(-90deg); } }
+
+/* Tik's idle loops are attention loops: first run after ~2.5s, then a short burst every 4 to 6s, only while on screen. */
+html[data-motion] .tk:not(.still).tk-proud .tk-body { animation: tk-hop 6s var(--ease-out) 2.5s infinite; }
+html[data-motion] .tk:not(.still) .tk-spark { transform-origin: center; animation: tk-twinkle 6s ease-in-out 2.5s infinite; }
+html[data-motion] .tk:not(.still).tk-nudge .tk-arm { animation: tk-poke 5s var(--ease-out) 2.5s infinite; }
+html[data-motion] .tk:not(.still) .tk-pokemark { animation: tk-blip 5s ease-out 2.5s infinite; }
+html[data-motion] .tk:not(.still).tk-ticking .tk-body { transform-origin: 50% 90%; animation: tk-shake 4s linear 1s infinite; }
+html[data-motion] .tk:not(.still) .tk-ring { animation: tk-blip 0.7s steps(2, jump-none) infinite alternate; }
+html[data-motion] .tk:not(.still) .tk-drip { animation: tk-drip 2.4s ease-out infinite; }
+html[data-motion] .tk:not(.still) .tk-coin { transform-origin: center; animation: tk-flip 5s var(--ease-io) 2.5s infinite; }
+html[data-motion] .tk:not(.still).tk-sleeping .tk-body { animation: tk-breathe 3.2s ease-in-out infinite alternate; }
+html[data-motion] .tk:not(.still) .tk-z { animation: tk-z 2.4s linear infinite; opacity: 0; }
+[data-scene]:not([data-live]) .tk, [data-scene]:not([data-live]) .tk * { animation-play-state: paused !important; }
+
+@keyframes tk-hop {
+  0%, 17%, 100% { transform: translateY(0) scale(1, 1); }
+  3% { transform: translateY(0) scale(1.04, 0.95); }
+  7.5% { transform: translateY(-4px) scale(0.98, 1.03); }
+  12.5% { transform: translateY(0) scale(1.02, 0.98); }
+}
+@keyframes tk-twinkle { 0%, 22%, 100% { opacity: 0.3; transform: scale(0.75); } 9% { opacity: 1; transform: scale(1); } }
+@keyframes tk-poke { 0%, 17%, 100% { transform: translateX(0); } 3.5% { transform: translateX(2.5px); } 8% { transform: translateX(0); } 12.5% { transform: translateX(2.5px); } }
+@keyframes tk-blip { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes tk-shake {
+  0%, 18%, 100% { transform: rotate(0); }
+  2.4%, 7.2%, 12% { transform: rotate(-3deg); }
+  4.8%, 9.6%, 14.4% { transform: rotate(3deg); }
+}
+@keyframes tk-drip { 0% { transform: translateY(-1px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(4px); opacity: 0; } }
+@keyframes tk-flip { 0%, 70%, 100% { transform: scaleX(1); } 77% { transform: scaleX(0.12); } 84% { transform: scaleX(1); } }
+@keyframes tk-breathe { from { transform: scale(1, 1); } to { transform: scale(1.015, 0.975); } }
+@keyframes tk-z { 0% { opacity: 0; transform: translate(0, 0); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -7px); } }
