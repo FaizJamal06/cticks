@@ -131,7 +131,7 @@ export function PenaltyCard({ p, votes, deckEmpty, members, gid, uid, now, name 
         <ul className="votes">
           {el.map((v) => {
             const x = mine.find((m) => m.voter === v);
-            return <li key={v}><span>{name(v)}</span><b>{!x ? "…" : x.vote === "done" ? "✅" : `❌ ${REASONS[x.reason || "other"]}`}</b></li>;
+            return <li key={v}><span><bdi>{name(v)}</bdi></span><b>{!x ? "…" : x.vote === "done" ? "✅" : `❌ ${REASONS[x.reason || "other"]}`}</b></li>;
           })}
         </ul>
         <div className="note">It fails only if more than half of them say ❌. Not voting counts as done.</div>
@@ -147,7 +147,7 @@ export function PenaltyCard({ p, votes, deckEmpty, members, gid, uid, now, name 
         <h2>Your dare didn&apos;t pass <span className="tag">1 retry</span></h2>
         <Head mood={soon ? "ticking" : "collector"} title="Try again or pay." sub="Send the proof again (same dare), or pay instead." />
         <blockquote className="dare">{p.dare?.text}</blockquote>
-        {nos.length > 0 && <ul className="votes">{nos.map((v) => <li key={v.voter}><span>{name(v.voter)}</span><b>{REASONS[v.reason || "other"]}{v.note ? `: ${v.note}` : ""}</b></li>)}</ul>}
+        {nos.length > 0 && <ul className="votes">{nos.map((v) => <li key={v.voter}><span><bdi>{name(v.voter)}</bdi></span><b>{REASONS[v.reason || "other"]}{v.note ? `: ${v.note}` : ""}</b></li>)}</ul>}
         {clock}
         <div className="row2">
           <button className="btn ghost" disabled={busy} onClick={() => run("pay")}>Pay {each(p)}</button>
@@ -168,14 +168,14 @@ export function PenaltyCard({ p, votes, deckEmpty, members, gid, uid, now, name 
           ? <Head mood="ticking" title="Your dare failed twice." sub={`Pay by ${due(p.due)} or you're out.`} />
           : <Head mood={soon ? "ticking" : "collector"} title={`Pay ${each(p)} on UPI.`} sub="Then tap I paid, and they'll confirm." />)}
         <ul className="votes">
-          {rows.map((r) => <li key={r.to}><span>{name(r.to)}</span><b className={`pay-${r.s}`}>{r.s === "confirmed" ? "got it ✓" : r.s === "marked" ? "waiting for them" : "unpaid"}</b></li>)}
+          {rows.map((r) => <li key={r.to}><span><bdi>{name(r.to)}</bdi></span><b className={`pay-${r.s}`}>{r.s === "confirmed" ? "got it ✓" : r.s === "marked" ? "waiting for them" : "unpaid"}</b></li>)}
         </ul>
         {p.status === "pay" && clock}
         {owed.length > 0 && (
           <button className="btn" disabled={busy} onClick={() => run("paid")}>{p.status === "paid" ? "Mark paid again" : "I paid"}</button>
         )}
         <div className="note">
-          {p.status === "paid" && owed.length ? `${owed.map((r) => name(r.to)).join(" & ")} says it didn't arrive. Check your UPI, then mark it paid again.`
+          {p.status === "paid" && owed.length ? `${owed.length === 1 ? name(owed[0].to) : owed.map((r) => name(r.to)).join(" & ")} ${owed.length === 1 ? "says" : "say"} it didn't arrive. Check your UPI, then mark it paid again.`
             : p.status === "paid" ? "They tap Got it, or it counts as yes at the morning check 2 days after you marked it."
             : "cTicks never moves money. Pay on UPI, then come back and tap I paid."}
         </div>
@@ -207,7 +207,7 @@ export function VoteCard({ p, votes, gid, uid, now, name }: Common & { p: Penalt
   return (
     <div className="card pen">
       <h2>Vote <span className="tag">{p.attempt === 2 ? "second try · " : ""}{left(p.voteEnds, now)}</span></h2>
-      <Head mood="nudge" title={`${name(p.uid)} says the dare is done.`} sub="Check your group chat for the proof, then vote." />
+      <Head mood="nudge" title={<><bdi>{name(p.uid)}</bdi> says the dare is done.</>} sub="Check your group chat for the proof, then vote." />
       <blockquote className="dare">{p.dare?.text}</blockquote>
       {mine && !no && <div className="note">You voted {mine.vote === "done" ? "✅ done" : "❌ not done"}. You can change it until {due(p.voteEnds)}.</div>}
       {!no ? (
@@ -247,7 +247,7 @@ export function ConfirmCard({ p, gid, uid, now, name }: Common & { p: Penalty })
   return (
     <div className="card pen">
       <h2>Payment <span className="tag">{left(pay?.confirmBy, now)}</span></h2>
-      <Head mood="collector" title={`${name(p.uid)} says you've been paid ${inr(p.stake)}.`}
+      <Head mood="collector" title={<><bdi>{name(p.uid)}</bdi> says you&apos;ve been paid {inr(p.stake)}.</>}
         sub={`For missing ${prettyDay(p.day, { weekday: "long" })}. No answer by ${due(pay?.confirmBy)} counts as yes.`} />
       <div className="row2">
         <button className="btn ghost" disabled={busy} onClick={() => run("notgot")}>Didn&apos;t get it</button>

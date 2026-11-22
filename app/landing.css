@@ -318,6 +318,7 @@ html[data-invite] .story { display: none; }
 .progress .bar { display: block; height: 100%; border-radius: 99px; background: var(--lime); transform-origin: left center; }
 .cell-stack { display: grid; }
 .cell-stack > .cell { grid-area: 1 / 1; }
+.cell-stack > .cell.pending { background: var(--card); } /* covers the "today" cell under it */
 .flip { display: grid; perspective: 700px; }
 .flip > div { grid-area: 1 / 1; backface-visibility: hidden; }
 .flip-front { opacity: 0; } /* final state: the miss has landed */

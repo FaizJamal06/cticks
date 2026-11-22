@@ -348,7 +348,7 @@ export default function Landing() {
             </div>
           }>
             <p className="rv" style={at(120, 8)}>The gym did not wait. At midnight Wednesday locks in, and in the morning Aryaan gets a choice: pay Shanayaa ₹100, or take a dare.</p>
-            <p className="small rv" style={at(180, 6)}>Do the dare, send the proof to your group chat, and the group votes in the app. Proof goes to your group chat. cTicks holds the vote.</p>
+            <p className="small rv" style={at(180, 6)}>Proof goes to your group chat. cTicks holds the vote.</p>
           </Scene>
 
           <Scene id="final" kicker="monday, 9:01am" title="Sunday night, it's over." flip split shape marks={<><Wk d="S" className="mk-sun" /><Wk d="✓" className="end" /></>} stage={

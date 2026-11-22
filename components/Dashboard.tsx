@@ -263,7 +263,7 @@ export function DashboardView({ group, players, feed, today, uid, lastSeen, onTo
         {dare && <>
           {unpaid.map((r) => (
             <div className="row" key={`${r.from}>${r.to}`}>
-              <span>{named(r.from)} → {named(r.to)} <small className="muted">unpaid</small></span>
+              <span><bdi>{named(r.from)}</bdi> → <bdi>{named(r.to)}</bdi> <small className="muted">unpaid</small></span>
               <b>{inr(r.unpaid)}{r.to === uid && <button className="linkbtn" onClick={() => gotAll(r.from)}>Got it</button>}</b>
             </div>
           ))}
