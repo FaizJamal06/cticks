@@ -241,14 +241,17 @@ export async function morningCheck(gid: string, now: number) {
   // 3: new penalties (Pay or Dare rounds only)
   const created = await createPenalties(gid, group, players, now);
 
-  // 4: misses in a row, from penalty days (any status, any round)
+  // 4: misses in a row, from penalty days (any status, any round), only since the player last joined (a rejoin is a
+  // fresh start). Streaks ending on any day of the catch-up window count, so a skipped cron run can't hide a third miss.
   const allPen = (await db().collection(`groups/${gid}/penalties`).get()).docs.map((d) => d.data() as Penalty);
   const streaks = new Map<string, number>();
   for (const uid of group.members) {
-    const days = allPen.filter((p) => p.uid === uid).map((p) => p.day);
-    const n = days.includes(yesterday) ? missesInARow(days, yesterday) : 0;
-    streaks.set(uid, n);
-    if (n >= 3 && isDare(group)) kicks.set(uid, "streak");
+    const joined = players.find((p) => p.uid === uid)?.joined || "0000-00-00";
+    const days = allPen.filter((p) => p.uid === uid && p.day >= joined).map((p) => p.day);
+    streaks.set(uid, missesInARow(days, yesterday));
+    let worst = 0;
+    for (let k = addDays(yesterday, -3); k <= yesterday; k = addDays(k, 1)) worst = Math.max(worst, missesInARow(days, k));
+    if (worst >= 3 && isDare(group)) kicks.set(uid, "streak");
   }
   sent += await announceCreated(gid, group, created.filter((p) => !kicks.has(p.uid) || kicks.get(p.uid) !== "streak"), streaks, now);
 

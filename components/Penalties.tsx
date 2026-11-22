@@ -263,7 +263,7 @@ export function OutScreen({ group, gid, uid }: { group: Group; gid: string; uid:
   const [busy, setBusy] = useState(false);
   const back = canRejoin(group, uid);
   return (
-    <div className="wrap center out">
+    <div className="wrap center outscreen">
       <Tik mood="sleeping" size={96} />
       <h1>You&apos;re out{k ? ` of round ${k.round}` : ""}.</h1>
       {k && <p className="sub">{KICK_WHY[k.why]}{k.owed > 0 ? `. You owed ${inr(k.owed)} when you left: pay it on UPI and they can mark it received.` : "."}</p>}

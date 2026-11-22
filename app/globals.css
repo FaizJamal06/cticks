@@ -201,7 +201,7 @@ label.f { display: block; margin-top: 14px; font-size: 13px; color: var(--mute);
 .deck .report { flex-basis: 100%; padding-bottom: 6px; }
 .deck .report .row2 { margin-top: 8px; }
 textarea.input { resize: vertical; font: inherit; line-height: 1.4; }
-.out { display: grid; gap: 14px; justify-items: center; text-align: center; padding-top: 10vh; place-items: start center; min-height: 0; }
-.out h1 { margin: 6px 0 0; font-size: 32px; letter-spacing: -0.03em; color: var(--ink); font-family: var(--sans); }
-.out .sub { font-family: var(--sans); font-size: 15px; max-width: 34ch; }
-.out .btn { max-width: 320px; }
+.outscreen { display: grid; gap: 14px; justify-items: center; text-align: center; padding-top: 10vh; place-items: start center; min-height: 0; }
+.outscreen h1 { margin: 6px 0 0; font-size: 32px; letter-spacing: -0.03em; color: var(--ink); font-family: var(--sans); }
+.outscreen .sub { font-family: var(--sans); font-size: 15px; max-width: 34ch; }
+.outscreen .btn { max-width: 320px; }
