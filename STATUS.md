@@ -1,8 +1,8 @@
 # STATUS: cTicks (formerly Pay Up)
 
-_Last updated: 22 Nov 2026. Update this file whenever something gets done, tested or found broken._
+_Last updated: 23 Nov 2026. Update this file whenever something gets done, tested or found broken._
 
-**State in one line:** cTicks lives at <https://cticks.vercel.app> (landing at `/`, app at `/app`); the old domain redirects there. Next: the one-time phone migration, then the on-phone test plan (both in section 4).
+**State in one line:** cTicks lives at <https://cticks.vercel.app>. **Pay or Dare + eliminations** is built and end-to-end tested on the `pay-or-dare` branch (Vercel preview), waiting for Faiz's OK before it merges. Spec: [docs/PENALTIES_SPEC.md](docs/PENALTIES_SPEC.md).
 
 | | |
 |---|---|
@@ -14,6 +14,15 @@ _Last updated: 22 Nov 2026. Update this file whenever something gets done, teste
 | Secrets | `.env.local` (git-ignored) and Vercel Production env. Service account JSON lives outside the repo |
 
 ## 1. Done ✅
+
+**Pay or Dare + eliminations (23 Nov 2026, branch `pay-or-dare`, preview only, not merged)**
+- [x] Spec approved with 17 changes to the original rules (docs/PENALTIES_SPEC.md section 0), e.g. the 48h is to *act*, a second rejection means you must pay (not an instant kick), rejected only if more than half of all voters say ❌, deadlines at 9am, no netting
+- [x] Pure state machine `lib/penalty.ts` (`step()` for every transition, `tally`, `planKicks`, `penaltyLedger`), dare deck `lib/dares.ts` (25 starter dares, blocklist, pick), 9am deadline helpers + misses-in-a-row in `lib/logic.ts`
+- [x] Server: `/api/penalty`, `/api/dares`, `/api/group` (round start + rejoin) and the 9am check in `lib/penalty-server.ts` (create penalties with a 4-day catch-up, tally closed votes, auto-confirm payments, kick on timeout / unpaid / 3 in a row, never empty a group, end the round with a winner). Cron routes take `?gid=` for tests
+- [x] Rules phase A **deployed to production** (additive, so the app on main still works): penalties/votes/dares read-only for members, server-only group fields, kicked players can't rejoin client-side. Phase B (narrower member writes, round start server-only) waits for the merge
+- [x] UI: penalty card in every state with the dare spin, vote card (reasons), confirm-payment card, Pay or Dare money card (unpaid per pair, no netting), grid 🎭 / "?" / kicked rows, "You're out" screen with Rejoin, penalty mode setting (next round only), dare deck sheet; new groups default to Pay or Dare
+- [x] Landing: miss beat (penalty push + card + dare), final beat without netting, 5 new FAQ answers; WEBSITE_COPY, CONTEXT, USER_FLOW and BRAND updated
+- [x] Preview env: the 8 env vars copied to Vercel Preview; a Protection Bypass for Automation secret lives in `.env.local` only
 
 **Landing polish (22 Nov 2026)**
 - [x] Background with depth: grain, a faint ✓ and dial-tick pattern, mood glows that follow the story (lime → amber at 9pm → coral at the miss → lime), big faded brand shapes with scroll-driven drift. All CSS/SVG data URIs. See [docs/BRAND.md](docs/BRAND.md#landing-page)
@@ -106,12 +115,20 @@ _Last updated: 22 Nov 2026. Update this file whenever something gets done, teste
 | Icons + OG image | Rendered with resvg; badge checked as a white silhouette with the face cut out | ✅ |
 | Per-platform banners | User-agent emulation: iPhone Safari/Chrome/Edge/Firefox, iOS 16.3, iPhone home screen, Instagram, iOS webview, Android WebView, Facebook, Android Chrome/Firefox/Samsung, desktop Chrome/Edge/Firefox/Safari | ✅ right text each; desktop never told to install |
 | In-app Copy link | Clipboard read back after tapping Copy link | ✅ `/?join=CODE` kept |
+| Pay or Dare logic | `npm test`: 53 new tests (every transition and guard in the spec, ties, no votes, retry, second rejection, payments, 3 in a row across a round boundary and with a gap, a group shrinking to 1 and to 0, ledger, deck, blocklist, push text never gendered) | ✅ 59/59 |
+| Pay or Dare rules | `npm run test:rules`: 12 new tests (members read, nobody writes penalties/votes/dares from the client, server-only fields, valid `next`, kicked can't rejoin client-side, kicked loses access). Each new rule loosened on purpose fails at least one test | ✅ 59/59 |
+| Pay or Dare end to end | Preview deploy, 3 throwaway accounts, 2 test groups, real UI + real API with ID tokens; deadlines moved into the past with the admin SDK, cron called with `?gid=` only. (1) miss → dare → reroll → Done → 2 ✅ → passed; (2) miss → dare → ❌❌ → retry → ❌❌ → must pay → deadline → kicked, owes ₹200; (3) miss → Pay → I paid → both payees confirmed; (4) 3 misses in a row → kicked → group of 1 → round ended early, winner. Also: rejoin refused in the same round and accepted in round 2; re-running the check changes nothing; can't vote on your own dare; no dare once locked; deck permissions; blocklist refuses unsafe dares. Test data deleted afterwards | ✅ |
+| Pay or Dare worst case (break-ui) | 6 members with 24-char, Arabic and emoji names, ₹1,00,000 stake, 120-char dares, 80-char notes, 5 open penalties + 2 votes + 2 confirmations, a kicked player's debt; 320 and 390px | ✅ after fixes: buttons stack instead of wrapping 3 lines, voter names no longer squeezed, names isolated with `<bdi>`; no horizontal scroll, no console errors |
 | New domain cticks.vercel.app (21 Nov) | curl + headless Chrome after deploy `c369cce`: `/`, `/app`, invite 200; og:image `https://cticks.vercel.app/og.png`; manifest `cTicks`, id `/`, start_url `/app`; service worker 200 with the `payup-c1ee8` config and `openWindow('/app')`; both crons 401 with no or a wrong secret; `/api/notify` 401; `/app` registers the SW on the new origin, no console errors. The authorised cron call was skipped because it would have pushed to the 3 real players | ✅ |
 | Old domain redirect | `payup-xi.vercel.app/?join=K7XQ2M&from=Shanayaa`, `/app`, `/login?join=…`, the SW: all 308 to the same path + query on cticks.vercel.app; in Chrome the old invite link shows the card with "Shanayaa" and code `K7XQ2M` | ✅ |
 | Auto-deploy after the Vercel rename | Push of `c369cce` to `main` → production deploy READY on project `cticks` | ✅ |
 | Landing polish (22 Nov) | Prod build in Chromium at 320/360/390/430/1440: no horizontal scroll; 0 of 81 text elements below WCAG AA over the glows (pixel-sampled); visible text identical to the previous version; reduced motion; Home/End/anchor jumps leave no day marker wrong; sticky header and riding Tik still stick with `overflow: clip` | ✅ |
 
 ## 3. Not tested yet ⚠️ (needs real phones)
+
+- [ ] Pay or Dare pushes on real phones (penalty, spin, Done, result, I paid, kick); test accounts had no devices, so `sent: 0` in the end-to-end run
+- [ ] The real 9am cron creating penalties in production (only after the merge, and only for groups switched to Pay or Dare)
+- [ ] "Share dare" through the iPhone and Android share sheets; the spin animation on a real phone
 
 - [ ] Install + push on **Android Chrome** (installed) and **iPhone home-screen app** (iOS 16.4+)
 - [ ] The "Turn on notifications" **tap** itself (in automated runs permission was pre-granted)
@@ -139,6 +156,8 @@ _Last updated: 22 Nov 2026. Update this file whenever something gets done, teste
 | Desktop Safari | n/a (optional) | needs Faiz | needs Faiz | needs Faiz | needs Faiz |
 
 ## 4. To do: your next steps 📋
+
+**Pay or Dare:** review the preview and screenshots → OK → merge to `main` → deploy rules phase B → check production. Existing groups stay Money only; switch yours in Settings → Penalty mode (it starts with your next round).
 
 **Setup:** done (Firebase project, rules, auth, FCM, Vercel, env, authorized domain).
 - [x] Firebase Auth → Authorized domains: `cticks.vercel.app` and the `pay-or-dare` preview domain added (22 Nov)
@@ -203,6 +222,11 @@ Then one of you ticks a task and the other should get the push once. Expect the 
 - **Local Node is 22** on the dev laptop; firebase 13 wants ≥24.12. Everything passes on 22 with engine warnings; Vercel and CI use 24.
 - **`npm audit`** flags `@grpc/grpc-js` under firebase; the only "fix" is downgrading firebase.
 
+- **Pay or Dare deadlines are enforced by the 9am cron** (Vercel Hobby fires within the hour). The server refuses actions after a deadline even before the check runs, so the consequence can land up to an hour after 9am.
+- **In a 2-person Pay or Dare group the only voter decides.** A second rejection only forces paying (never a direct kick), so the worst a hostile voter can do is make you pay the normal stake.
+- **The dare blocklist is a word list**, not moderation. The real safeguards are a second member's OK and the report button.
+- **The dashboard listens to up to 500 penalties per group.** Fine for years at 2–6 people; filter by round if it ever grows.
+- **Previews share the production Firebase project.** Test only with test accounts and `?gid=`-scoped cron calls; preview deploys also show Vercel's toolbar (not part of the app).
 - **`/` forwards signed-in people using a `payup.auth` flag** the app sets in localStorage. Someone signed in from before the rebrand who opens `/` in a browser sees the landing page once; tapping Log in takes them into the app, which sets the flag.
 - **Installs from `payup-xi.vercel.app` stopped being the app** when the domain moved: they open the new site in a browser view. Re-install from cticks.vercel.app (migration steps in section 4).
 - **Push tokens from the old domain stay in `users/{uid}.fcmTokens`** until FCM rejects them. While the old site still has notification permission on a phone, that phone gets each push twice (once via the old site). Clearing the old site's data, or deleting the old iPhone app, kills the token and the next push prunes it.

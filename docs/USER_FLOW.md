@@ -42,6 +42,7 @@ flowchart TD
 3. **Onboard → Start a challenge** (`Onboard.tsx`):
    - Stake per missed day (default ₹100), round length (7/14/21/30), starts **Today** or **Tomorrow** (default Tomorrow).
    - What counts as a missed day: **Finish every task** (default) or **Do at least one**.
+   - When someone misses: **Pay or Dare** (default) or **Money only**.
    - Their daily tasks (3 empty rows to start, up to 8).
    - **Lock it in** → creates `groups/{CODE}`, their `players/{uid}`, and a "joined" feed item.
 4. **Dashboard** shows an **Invite your friend** banner with the code and **Share invite** (native share sheet / copy). The link looks like `https://<app>/?join=K7XQ2M&from=<your name>`.
@@ -95,21 +96,37 @@ sequenceDiagram
 | Day 1, nothing ticked yet | **Edit tasks** link is available. After your first tick on day 1, tasks lock until the round ends. |
 | Midnight IST passes | The app's `today` refreshes within 30s. Yesterday becomes final and is scored. |
 
-## 7. End of a round
+## 7. Pay or Dare: when someone misses (`Penalties.tsx`)
+
+Only in groups whose penalty mode is Pay or Dare (the default for new groups). Full rules and every edge case: [PENALTIES_SPEC.md](PENALTIES_SPEC.md).
+
+1. **9am, the morning after a miss:** the server creates a **penalty**. The player gets *"💸 You missed yesterday. Pay ₹100 or take a dare. Decide by 9am Sat."* (or *"That's 2 in a row… One more miss and you're out."*). Everyone else gets *"Aryaan missed yesterday. Pay or dare, their call."*
+2. **Penalty card** (top of the dashboard): countdown, **Pay ₹100** or **Take a dare 🎲**. Deadlines are always 9am and are checked every morning at 9.
+3. **Pay:** pay each person on UPI, tap **I paid**. Each payee gets a **Confirm payment** card: **Got it** or **Didn't get it** (back to unpaid, the payer gets a push, nobody is kicked). No answer auto-confirms at the morning check 2 days later.
+4. **Dare:** the server picks a random dare from the group's deck; the card plays a short spin and lands on it. **1 reroll.** **Share dare** prefills a message for the group chat. Do it, send the video/photo to the group (WhatsApp/Instagram), tap **Done, I sent the proof**.
+5. **Vote card** for everyone else: the dare, who, time left, **✅ Done / ❌ Not done** (❌ needs a reason: no proof, didn't do it, easier version, other). It fails only if more than half of the voters say ❌; not voting counts as done. It closes when everyone has voted, or at the 9am check at least 24h later.
+6. **Rejected once:** **Sent it again** (same dare, new vote) or **Pay instead**, by the next 9am at least 24h away. **Rejected twice:** the dare is locked, pay by the deadline or you're out.
+7. **Passed:** 🎭 on the round grid, nothing owed. **Paying is always possible** until the deadline, even mid-vote ("Rather pay?").
+8. **Kicked** (ignored a penalty, didn't pay after two rejections, or 3 misses in a row): removed from the group, everyone gets *"🚪 Aryaan is out"*. The kicked player sees **You're out** (reason, what they owed, **Rejoin** once the next round starts, **Switch challenge**). Their unpaid debts stay on everyone's money card with "(out)", and they stay greyed in this round's grid. If only one person is left, the round ends and they're the last one standing.
+
+## 8. End of a round
 
 1. After the last day, the 9am cron sends everyone: *"🏁 Round 1 is over. Final: Arjun owes Faiz ₹200. Settle up, then start round 2 in the app."*
 2. The header says "Round 1 finished · settle up" and the money card says **Final: …** with a **Start the next round** button.
 3. Settings → pick length and Today/Tomorrow → **Start round 2**. Everyone gets a push. Tasks carry over and are editable again until the first tick on day 1.
 4. Money is paid outside the app (UPI).
 
-## 8. Settings sheet (`Sheets.tsx`)
+## 9. Settings sheet (`Sheets.tsx`)
 
-- **Stake** and **miss rule** → Save. Everyone is notified. If mid-round, a warning says it re-scores the whole round.
+- **Stake** and **miss rule** → Save. Everyone is notified. Money only: if mid-round, a warning says it re-scores the whole round. Pay or Dare: the change is queued for the next round.
+- **Penalty mode**: Money only or Pay or Dare, with an explainer. Always takes effect when the next round starts.
+- **Dare deck**: the dare rules, add a custom dare (blocked words are refused with the rule they break; someone else has to OK it), OK pending dares, restore reported ones (not if you reported it), report any dare (it leaves the deck at once).
+- **Start round N** now goes through the server (`/api/group`), which creates any last penalties from the outgoing round first.
 - **Restart with a new round** (mid-round needs a second confirm: it wipes the current round's score).
 - **Switch challenge**: clears `users.groupId` and returns to Onboard (you stay a member of the old group).
 - **Log out**.
 
-## 9. Notifications (complete list)
+## 10. Notifications (complete list)
 
 Tapping any notification opens the app at `/app` (or focuses it if it's already open).
 
@@ -124,4 +141,15 @@ Tapping any notification opens the app at `/app` (or focuses it if it's already 
 | Stake/rule changed | everyone else | "Faiz changed the rules. ₹200 per missed day…" |
 | New round | everyone else | "Round 2 is set. 7 days starting Mon, 30 Nov. Lock in." |
 | ~9pm IST, still a miss today | that person | "⏰ Clock's ticking. 2 left: Read, Sleep… you owe ₹100. Arjun is at 3/3." |
-| ~9am IST | everyone in an active round | "💸 Arjun missed yesterday. Running total: Arjun owes Faiz ₹100." / "✅ Clean day yesterday" / "🏁 Round 1 is over" |
+| ~9am IST (Money only) | everyone in an active round | "💸 Arjun missed yesterday. Running total: Arjun owes Faiz ₹100." / "✅ Clean day yesterday" / "🏁 Round 1 is over" |
+| Penalty created (Pay or Dare, ~9am) | the player / everyone else | "💸 You missed yesterday. Pay ₹100 or take a dare. Decide by 9am Sat." / "💸 Aryaan missed yesterday. Pay or dare, their call." |
+| Dare spun / rerolled | everyone else | "🎲 Aryaan's dare: Sing the chorus of a pop song out loud, full volume." |
+| Done, I sent the proof | the voters | "🎭 Aryaan says the dare is done. … Check WhatsApp and vote by 9am Tue." |
+| Vote result | everyone | "✅ Aryaan's dare passed. 2 of 2 said done. Nothing owed." / "❌ Your dare didn't pass. Send the proof again or pay ₹100 by 9am Sat." |
+| I paid | each payee | "💸 Aryaan says you've been paid ₹100. Confirm you got it. No answer by 9am Thu counts as yes." |
+| Got it / Didn't get it | the payer | "✅ Shanayaa got your ₹100" / "🤨 Shanayaa says the ₹100 didn't arrive" |
+| ~9pm, on 2 misses in a row | that person | "⏰ Miss today and you're out" |
+| Kicked | everyone + the player | "🚪 Aryaan is out. Missed 3 days in a row. Back when round 2 starts." / "🚪 You're out of round 1…" |
+| Round ended by elimination | everyone | "🏁 Shanayaa is the last one standing. Round 1 is over." |
+| Custom dare added | everyone else | "🃏 New dare needs an OK" |
+| Penalty mode switched | everyone else | "Faiz switched to Pay or Dare. Starts with round 2." |

@@ -159,20 +159,18 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Midnight. That's a miss.
 
-**Body:** The gym did not wait. At midnight Wednesday locks in, and in the morning everyone gets the news.
+**Body:** The gym did not wait. At midnight Wednesday locks in, and in the morning Aryaan gets a choice: pay Shanayaa ₹100, or take a dare.
 
-**Mock (Aryaan's lock screen, 9am Thursday):**
+**Mock (Aryaan's lock screen, 9am Thursday):** the real Pay or Dare penalty push.
 > **cTicks** · 9:02 am
-> **💸 Aryaan missed yesterday**
-> Running total: Aryaan owes Shanayaa ₹100.
+> **💸 You missed yesterday**
+> Pay ₹100 or take a dare. Decide by 9am Sat.
 
-**Mock (Aryaan's dashboard):** the round grid's Wednesday cell flips to coral ✗. The money card flips from "All square" to:
-> **You owe Shanayaa ₹100** (coral)
-> Missed days this round: you 1 · Shanayaa 0
+**Mock (penalty card):** "You missed Wednesday. Pay ₹100 or take a dare." · `2d left · by 9am Sat` · `Pay ₹100` / `Take a dare 🎲` (pressed), then the dare lands: "Sing the chorus of a pop song out loud, full volume." The round grid's Wednesday cell flips to an amber "?" (not decided yet).
 
-**Caption:** You can only tick your own tasks, and only today's. No backfilling Wednesday on Thursday.
+**Caption:** Proof goes to your group chat. cTicks holds the vote.
 
-*Tik:* collector pose, holding the ₹ coin, very pleased with himself.
+*Tik:* collector on the card, nudge beside it once the dare lands.
 
 ---
 
@@ -180,18 +178,21 @@ WHAT COUNTS AS A MISSED DAY
 
 **H2:** Sunday night, it's over.
 
-**Body:** Shanayaa slipped on Friday, Aryaan slipped again on Saturday. Misses cancel out, so Aryaan owes Shanayaa one day's stake.
+**Body:** Aryaan sang the chorus, sent the video to the group, and Shanayaa voted it through. That miss cost nothing: 🎭 on the grid.
 
-**Mock (push, Monday 9am):**
+**Mock (push, Monday 9am):** the Pay or Dare round-over push.
 > **🏁 Round 1 is over**
-> Final: Aryaan owes Shanayaa ₹100. Settle up, then start round 2 in the app.
+> Everything's settled. Start round 2 in the app.
 
 **Mock (money card):**
-> **Final: You owe Shanayaa ₹100**
-> Missed days this round: you 2 · Shanayaa 1
+> **All settled**
+> Missed days this round: you 2 · Shanayaa 1. Settled this round: ₹200.
+> grid: You ✓✓🎭✓✓✗✓ · Shanayaa ✓✓✓✓✗✓✓
 > `Start the next round`
 
-**Body 2:** Aryaan pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2. Same tasks or new ones.
+**Body 2:** Shanayaa slipped on Friday, Aryaan on Saturday. Each paid ₹100 on UPI, one miss at a time. cTicks never touches your money, it just keeps the score honest. Then: round 2.
+
+*(Pay or Dare never nets misses out. Money only mode still does; the story follows the default mode.)*
 
 *Tik:* collector while the score shows, flips to proud on "Start the next round".
 
@@ -236,8 +237,23 @@ WHAT COUNTS AS A MISSED DAY
 **Is it free?**
 Yes. No ads, no subscription.
 
+**What's Pay or Dare?**
+Miss a day and you choose: pay the stake to each friend, or spin a dare. Do it, send the proof to your group chat, and the group votes in the app. Paying is always an option.
+
+**Who sees my dare video?**
+Only the people you send it to. cTicks never sees, uploads or stores videos or photos. Proof goes to your group chat. cTicks holds the vote.
+
+**Can I get kicked out?**
+In Pay or Dare, yes: ignore a penalty for 48 hours, fail a dare twice and then don't pay, or miss 3 days in a row. You can rejoin when the next round starts.
+
+**Are the dares safe?**
+They're meant to be silly, not risky: sing a chorus, a 30-second dance. Custom dares need a second person's OK, and anything dangerous, illegal or public is off limits. Anyone can report a dare.
+
+**Can we just play for money?**
+Yes. Pick Money only when you start a challenge, or switch in settings from the next round.
+
 **Does cTicks move money?**
-No. It keeps score and tells you who owes whom. You settle up yourselves, on UPI or however you like.
+No. It keeps score and tells you who owes whom. You pay on UPI or however you like.
 
 **Can you cheat?**
 Not easily. You can only tick your own tasks, and only today's. "Today" comes from our server in India time, so changing your phone's clock does nothing. If someone edits their task list, everyone gets told.
@@ -246,13 +262,13 @@ Not easily. You can only tick your own tasks, and only today's. "Today" comes fr
 Yes, on iOS 16.4 or newer, once you add it to your Home Screen from Safari. Older iPhones can still use it, just without notifications.
 
 **How many people can play?**
-2 to 6 per challenge. Each missed day, you owe the stake to every other player. cTicks nets it all out.
+2 to 6 per challenge. A missed day costs the stake to every other player, unless you take a dare and it passes.
 
 **Does it work on a laptop?**
 Yes, in any modern browser. Notifications work there too.
 
 **When does a day end?**
-At midnight, India time. The warning comes around 9pm and the results around 9am.
+At midnight, India time. The warning comes around 9pm. Results, new penalties and every Pay or Dare deadline land at 9am.
 
 ---
 
@@ -311,7 +327,7 @@ Skips the story. One screen.
 | Around 9pm warning, exact text | `app/api/cron/reminder` (Vercel cron fires within the 9pm hour) |
 | Around 9am results: "💸 Aryaan missed yesterday", "🏁 Round 1 is over" | `app/api/cron/results` |
 | Day ends at midnight India time; today only; own tasks only; phone clock doesn't matter | `firestore.rules` `istToday()`, players writable only by their uid |
-| Misses cancel out; you owe the stake to each other player | `ledger()` in `lib/logic.ts` |
+| Money only: misses cancel out per pair; Pay or Dare: each PAY penalty owes the stake to each other player, no netting | `ledger()` in `lib/logic.ts`, `penaltyLedger()` in `lib/penalty.ts` |
 | "You owe Shanayaa ₹100", "Final: …", "Start the next round" | `DashboardView` |
 | Editing tasks tells everyone | `EditTasksSheet` posts a `tasks` feed item, pushed to the others |
 | 2 to 6 people | `Onboard.tsx` join check, rules |

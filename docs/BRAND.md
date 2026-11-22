@@ -24,11 +24,11 @@ Personality: your hype friend, slightly menacing when you slip.
 
 | Mood | Looks like | Use it for |
 |---|---|---|
-| `proud` | Happy closed eyes, open grin, arm up, sparkles | Task ticked, day cleared, round won, the logo, app icons, CTAs |
-| `nudge` | Side-eye, one brow up, poking | Nudges (sent or received), the invite card |
-| `ticking` | Wide eyes, worried brows, sweating, crown turns amber and rings | The ~9pm warning, "tasks still open" |
-| `collector` | Smug half-lidded eyes, ✓-shaped smirk, holding a ₹ coin | A miss, "You owe…", the results push, round over |
-| `sleeping` | Closed eyes, z z z, leaning back | Round not started, empty states, waiting for a friend |
+| `proud` | Happy closed eyes, open grin, arm up, sparkles | Task ticked, day cleared, round won, a dare passed, the logo, app icons, CTAs |
+| `nudge` | Side-eye, one brow up, poking | Nudges (sent or received), the invite card, the dare spin, waiting for votes, the vote card |
+| `ticking` | Wide eyes, worried brows, sweating, crown turns amber and rings | The ~9pm warning, "tasks still open", a penalty with under 12h left, "pay or you're out" |
+| `collector` | Smug half-lidded eyes, ✓-shaped smirk, holding a ₹ coin | A miss, an open penalty, "You owe…", confirming a payment, the results push, round over |
+| `sleeping` | Closed eyes, z z z, leaning back | Round not started, empty states, waiting for a friend, the "You're out" screen |
 
 Rules:
 - In the app Tik is **small and still** (`<Tik mood size />`, 24 to 44px). Big Tiks and idle motion belong on the landing page.
@@ -92,5 +92,8 @@ All of it lives in `app/landing.css` and `app/page.tsx`. CSS and inline SVG only
 - Indian context: ₹, UPI, India time. Amounts like ₹1,00,000.
 - Funny, but the joke never hides the rule. Say exactly what happens and when.
 - No em dashes. Use a full stop, a comma or a colon.
+- Never gendered. The app doesn't know anyone's pronouns, so push and in-app text says "Aryaan says the dare is done", never "he did his dare". (The landing story's made-up characters are the only exception.)
+- Pay or Dare copy always says where proof goes and that paying is an option: "Proof goes to your group chat. cTicks holds the vote." Deadlines are always "9am <day>" and "checked every morning at 9".
+- Dares are silly, not risky. The starter deck (`lib/dares.ts`) and the dare rules in the deck screen are the reference for tone and safety.
 - Only true claims. No made-up users, ratings, testimonials or press logos. cTicks keeps score; it never moves money. Say "around 9pm", because the cron fires within the hour.
 - Example people are made up (Aryaan and Shanayaa on the landing page).

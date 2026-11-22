@@ -12,6 +12,7 @@ cTicks (formerly Pay Up) is a money-on-the-line accountability app for 2–6 fri
 - Every missed day, you owe **the stake** (e.g. ₹100) to **each** other player. The app nets this per pair and shows who owes whom.
 - People get **push notifications** for: a friend ticking a task, a friend clearing the day, nudges, a 9pm "you're about to miss" warning, and 9am results.
 - The app only keeps score. Money is settled outside the app (UPI).
+- **Penalty mode** (per group, changes only from the next round): **Money only** (the above, misses net out per pair) or **Pay or Dare** (default for new groups): every missed day is a *penalty*; the player pays the stake to each other member, or takes a random dare, sends proof to the group chat (never to cTicks) and the group votes. Ignoring a penalty, failing a dare twice and not paying, or missing 3 days in a row gets you **kicked** until the next round. Full rules: [docs/PENALTIES_SPEC.md](docs/PENALTIES_SPEC.md).
 
 ## Product decisions (and why)
 
@@ -26,6 +27,9 @@ cTicks (formerly Pay Up) is a money-on-the-line accountability app for 2–6 fri
 | **Invite = 6-char code that is also the group's doc id** | No lookup collection is needed. Rules let a signed-in user `get` (never `list`) a group and add *only themselves* to `members`. |
 | **Server composes push text** | The client posts a feed item, and `/api/notify` verifies the ID token, checks membership and authorship, and writes the message. Clients can't send arbitrary pushes. |
 | **Vercel Cron (Hobby)** | Free. It allows once per day per job, firing *within* the scheduled hour. So "9pm" really means 9–10pm IST. |
+| **Pay or Dare is server-authoritative** | Penalties, dare spins, Done taps, votes, payment marks, tallies and kicks are written only by API routes (admin SDK) after verifying the ID token. Rules give members read-only access. The state machine is one pure reducer (`lib/penalty.ts`) so every transition is unit-tested. |
+| **Every Pay or Dare deadline is 9:00am IST** | The cron runs once a day at 9am, so deadlines land exactly when they're enforced ("checked every morning at 9"). 48h to act; vote and retry windows end at the first 9am ≥ 24h away; unconfirmed payments auto-confirm at the first 9am ≥ 48h after "I paid". The server also refuses actions after a deadline. |
+| **No uploads, no money** | Dare proof goes to the group chat (WhatsApp/Instagram); payments happen on UPI. cTicks stores only the penalty, the dare text and the votes. Still the free Spark plan. |
 
 ## Routes
 
@@ -57,6 +61,9 @@ app/
   globals.css                   all styles (dark theme, lime #d7ff3a accent, coral #ff5b39 for misses)
   firebase-messaging-sw.js/route.ts   serves the service worker with Firebase config injected from env
   api/notify/route.ts           POST: verify ID token → push a feed event to the other members
+  api/penalty/route.ts          POST: Pay or Dare actions (pay, dare, reroll, paid, done, again, vote, got, notgot)
+  api/dares/route.ts            POST: dare deck (add with blocklist check, approve, report)
+  api/group/route.ts            POST: start the next round (server-side, settles the outgoing round) and rejoin after a kick
   api/cron/reminder/route.ts    GET (Vercel Cron 15:30 UTC ≈ 9pm IST): warn anyone about to miss today
   api/cron/results/route.ts     GET (Vercel Cron 03:30 UTC ≈ 9am IST): yesterday's misses + running total / final score
 components/
@@ -69,9 +76,14 @@ components/
                    notification setup; InAppBanner ("open in Safari/Chrome" + copy link) for WhatsApp/Instagram/etc.
   TaskEditor.tsx   task list editor + RulePicker
   Toasts.tsx       in-app toasts (window "payup-toast" event, optional Tik mood)
+  Penalties.tsx    Pay or Dare cards: your penalty (every state + the dare spin), vote card, confirm-payment card, "You're out" screen
+                   (Sheets.tsx also has the Dare deck sheet, the penalty-mode picker and round start via /api/group)
   Tik.tsx          <Tik mood size/> (the mascot) and <Logo/> (Tik + "cTicks" wordmark)
 lib/
-  logic.ts         PURE game logic shared by client + server: dayKey, round state, isMiss, ledger, streak
+  logic.ts         PURE game logic shared by client + server: dayKey, round state, isMiss, ledger, streak, 9am deadlines, misses in a row
+  penalty.ts       PURE Pay or Dare state machine: step(penalty, event, ctx), tally, planKicks, penaltyLedger (tests/penalty.test.ts)
+  dares.ts         PURE dare deck: 25 starter dares, checkDare() blocklist, deckOf(), pickDare()
+  penalty-server.ts  server-only: penalty actions in transactions, the 9am check (create, tally, auto-confirm, kick), round start, rejoin
   feed.ts          feed item type + feedLine() (in-app text) + feedPush() (notification text)
   client.ts        browser helpers: postFeed (+ calls /api/notify), push enable/token, toasts, codes, error text
   firebase.ts      client Firebase init from NEXT_PUBLIC_* env
@@ -118,9 +130,17 @@ groups/{CODE}/players/{uid}         readable by members, writable ONLY by uid
   joined: "YYYY-MM-DD"              days before this never count
 
 groups/{CODE}/feed/{autoId}         append-only; readable by members
-  by, kind ("check"|"nudge"|"join"|"round"|"settings"|"tasks"), ts (ms)
-  + kind fields: task, n, total, to, open, stake, rule, round, start, days
-  pushed?: true                     set by the server so a push is sent at most once
+  by, kind ("check"|"nudge"|"join"|"round"|"settings"|"tasks"|"mode"; server: "pen"|"kick"|"ended"|"dare"), ts (ms)
+  + kind fields: task, n, total, to, open, stake, rule, round, start, days, next, mode, ev, pid, dare, attempt, …
+  pushed?: true                     set by the server so a push is sent at most once (server events are written with it)
+
+Pay or Dare (docs/PENALTIES_SPEC.md section 4):
+groups/{CODE} also: penaltyMode ("money"|"dare", missing = money), next {penaltyMode, stake, rule} (queued for the next
+  round, members write it), and server-only kicked {uid: {round, day, why, owed}}, endedEarly, winner, checkedOn
+groups/{CODE}/penalties/{uid}_{day} server-only writes, members read. status open|dare|voting|retry|pay|paid|passed|kicked,
+  due (the one deadline the 9am check acts on), stake + payees (snapshots), dare, attempt, voters, tallies, payments {payee: owed|marked|confirmed}
+groups/{CODE}/penalties/{id}/votes/{attempt}_{voterUid}   server-only writes, members read
+groups/{CODE}/dares/{id}            custom dares (+ override docs for reported starters); server-only writes, members read
 ```
 
 New rounds don't delete anything. They move `start` and bump `round`. Old `checks` stay in the doc, and scoring only looks at the current round's days.
@@ -131,7 +151,9 @@ New rounds don't delete anything. They move `start` and bump `round`. Old `check
 - **Counted days** are days of the current round that are already over (`day < today`) and on or after `p.joined`. Today never counts until midnight.
 - **Ledger**: for each pair (a, b), net = (misses_a − misses_b) × stake. A positive net means a owes b.
 - **Streak**: consecutive non-missed days going back from yesterday, plus today if today is already clean with at least one tick.
-- Changing `stake` or `rule` mid-round re-scores the whole round (the UI warns about this).
+- Changing `stake` or `rule` mid-round re-scores the whole round (the UI warns about this). **Money only.**
+- **Pay or Dare money** (`penaltyLedger`): PAY penalties, and penalties closed by a kick, owe their snapshot stake to each payee; a passed dare owes nothing; nothing nets out. Unfinished penalties are "on the line". Stake and rule changes are queued in `next` and apply at the next round start.
+- **Kicks** (`planKicks`): a kick never empties a group (everyone at once → nobody removed, round ends, no winner); one left → `endedEarly` = yesterday, `winner` set. 3 in a row = consecutive calendar days that each have a penalty, since the player last joined.
 
 ## Notification pipeline
 
@@ -141,6 +163,7 @@ New rounds don't delete anything. They move `start` and bump `round`. Old `check
 4. Devices: in the background, the service worker (`/firebase-messaging-sw.js`, compat SDK) shows the system notification. In the foreground, the Firestore feed listener shows an in-app toast instead. Server reminders/results arrive via `onMessage` as toasts.
 5. Tapping a notification focuses an open `/app` window or opens `/app` (service worker `notificationclick` + `fcmOptions.link`).
 6. A tick only pushes **once per task per day per device**: `localStorage` key `payup.told.<gid>.<day>.<taskId>`, so untick/re-tick doesn't spam.
+7. **Pay or Dare** events don't go through `/api/notify`: the API route or the 9am check that made the transition writes the feed item (`pushed: true`) and sends the push itself (`penaltyMsgs()` / `penaltyFeed()` in `lib/feed.ts`). A push only goes out when a transaction actually changed something, so double taps and repeated cron runs never repeat it.
 
 ## Environment variables
 
@@ -156,6 +179,9 @@ See `.env.example`. `NEXT_PUBLIC_FIREBASE_*` (6 values incl. VAPID) go to the br
 - Keep `payup.*` localStorage/sessionStorage keys and the `payup-toast` event name: renaming them would wipe people's state.
 - The landing story copies the app's real push text and screens. Change one, change the other (`app/page.tsx`, `docs/WEBSITE_COPY.md`).
 - Any new write path needs a matching rule in `firestore.rules`. Rules are the real security boundary.
+- Penalty transitions live only in `lib/penalty.ts` `step()`. Add a transition there, with a test, never in a route.
+- Push and in-app text never uses gendered pronouns (the app doesn't know anyone's): "Aryaan says the dare is done", not "he did his dare".
+- Cron routes accept `?gid=CODE` (with `CRON_SECRET`) to run for one group; use it for tests on previews, which share the production Firebase project.
 
 ## Gotchas
 
