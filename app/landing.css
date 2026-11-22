@@ -34,7 +34,9 @@ html:has(.land) { scroll-padding-top: 76px; scroll-padding-bottom: 88px; -webkit
   /* glow colours as rgb triplets, so one gradient takes any of them */
   --lime-rgb: 215 255 58; --amber-rgb: 255 178 58; --coral-rgb: 255 91 57;
 
-  position: relative; isolation: isolate; overflow-x: clip; min-height: 100svh;
+  /* clip both ways: glows spill past the first and last sections and must not add scroll space. clip (not hidden)
+     makes no scroll container, so the sticky header and the riding Tik still stick to the screen. */
+  position: relative; isolation: isolate; overflow: clip; min-height: 100svh;
 }
 @media (min-width: 600px) { .land { --gutter: 32px; } }
 @media (min-width: 900px) { .land { --mark: 20px; --tik-ride: 28px; } }
