@@ -19,8 +19,20 @@ service cloud.firestore {
       return d.stake is number && d.stake > 0 && d.stake <= 100000
         && d.rule in ['all', 'none']
         && d.days in [7, 14, 21, 30]
-        && d.round is int;
+        && d.round is int
+        && (!('penaltyMode' in d) || d.penaltyMode in ['money', 'dare'])
+        && validNext(d);
     }
+    // Settings queued for the next round (Pay or Dare mode, and any mode switch).
+    function validNext(d) {
+      return !('next' in d) || (d.next is map
+        && d.next.keys().hasOnly(['penaltyMode', 'stake', 'rule'])
+        && (!('penaltyMode' in d.next) || d.next.penaltyMode in ['money', 'dare'])
+        && (!('stake' in d.next) || (d.next.stake is number && d.next.stake > 0 && d.next.stake <= 100000))
+        && (!('rule' in d.next) || d.next.rule in ['all', 'none']));
+    }
+    // Written only by the server (admin SDK): who's out, the mode in force, an early round end, the winner.
+    function serverOnly() { return ['kicked', 'penaltyMode', 'endedEarly', 'winner', 'checkedOn']; }
     // 1–8 tasks. Zero tasks would mean isMiss() is always false: a player who can never owe.
     function validTasks(d) { return d.tasks is list && d.tasks.size() >= 1 && d.tasks.size() <= 8; }
 
@@ -34,17 +46,24 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if false;
 
+      // A new group may pick its penalty mode; nothing else server-only exists yet.
       allow create: if signedIn()
         && request.resource.data.members == [me()]
         && request.resource.data.createdBy == me()
+        && !request.resource.data.keys().hasAny(['kicked', 'endedEarly', 'winner', 'checkedOn', 'next'])
         && validGroup(request.resource.data);
 
+      // Phase A of Pay or Dare (docs/PENALTIES_SPEC.md 7.3): additive, so the app on main keeps working.
+      // Phase B (after the merge) narrows the member path to stake / rule / next and makes round starts server-only.
       allow update: if validGroup(request.resource.data) && (
-        // members can change stake / rule / rounds, but not who's in the group
+        // members can change stake / rule / rounds / next, but not who's in the group, and never server-only fields
         (isMember(gid) && request.resource.data.members == resource.data.members
-          && request.resource.data.createdBy == resource.data.createdBy)
-        // someone with the code can add exactly themselves (max 6 people)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOnly()))
+        // someone with the code can add exactly themselves (max 6 people). Someone who's been kicked can't:
+        // they come back through the server, which resets their `joined` date (/api/group rejoin).
         || (signedIn() && !(me() in resource.data.members)
+          && !(me() in resource.data.get('kicked', {}))
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
           && request.resource.data.members == resource.data.members.concat([me()])
           && resource.data.members.size() < 6));
@@ -73,6 +92,21 @@ service cloud.firestore {
         allow read: if isMember(gid);
         allow create: if isMember(gid) && request.resource.data.by == me();
         allow update, delete: if false;
+      }
+
+      // Pay or Dare: penalties, their votes, and the dare deck. Members read; only the server writes
+      // (every action goes through an API route that checks the ID token and the state machine).
+      match /penalties/{pid} {
+        allow read: if isMember(gid);
+        allow write: if false;
+        match /votes/{vid} {
+          allow read: if isMember(gid);
+          allow write: if false;
+        }
+      }
+      match /dares/{did} {
+        allow read: if isMember(gid);
+        allow write: if false;
       }
     }
   }

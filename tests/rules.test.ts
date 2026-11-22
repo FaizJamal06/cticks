@@ -273,3 +273,110 @@ describe("feed", () => {
     await assertFails(deleteDoc(doc(as("bob"), `groups/${G}/feed/f1`)));
   });
 });
+
+// ---------- Pay or Dare (docs/PENALTIES_SPEC.md section 7) ----------
+
+const penaltyDoc = { uid: "bob", day: YESTERDAY, round: 1, status: "open", stake: 100, payees: ["alice"], payments: { alice: { s: "owed", at: 1 } } };
+const seedPenalty = () => seed(async (db) => {
+  await setDoc(doc(db, `groups/${G}/penalties/bob_${YESTERDAY}`), penaltyDoc);
+  await setDoc(doc(db, `groups/${G}/penalties/bob_${YESTERDAY}/votes/1_alice`), { voter: "alice", attempt: 1, vote: "done", ts: 1 });
+  await setDoc(doc(db, `groups/${G}/dares/x1`), { text: "Moonwalk", by: "alice", createdAt: 1, approvedBy: null, active: false, reported: null });
+});
+
+describe("penalties, votes and dares: members read, only the server writes", () => {
+  const pen = (who: DB) => doc(who, `groups/${G}/penalties/bob_${YESTERDAY}`);
+  const vote = (who: DB) => doc(who, `groups/${G}/penalties/bob_${YESTERDAY}/votes/1_alice`);
+  const dare = (who: DB) => doc(who, `groups/${G}/dares/x1`);
+  beforeEach(seedPenalty);
+
+  test("members can read penalties, votes and the deck", async () => {
+    await assertSucceeds(getDoc(pen(as("alice"))));
+    await assertSucceeds(getDocs(collection(as("bob"), `groups/${G}/penalties`)));
+    await assertSucceeds(getDoc(vote(as("bob"))));
+    await assertSucceeds(getDocs(collection(as("alice"), `groups/${G}/penalties/bob_${YESTERDAY}/votes`)));
+    await assertSucceeds(getDocs(collection(as("alice"), `groups/${G}/dares`)));
+  });
+  test("non-members and signed-out users can't read any of it", async () => {
+    for (const who of [as("carol"), anon()]) {
+      await assertFails(getDoc(pen(who)));
+      await assertFails(getDocs(collection(who, `groups/${G}/penalties`)));
+      await assertFails(getDoc(vote(who)));
+      await assertFails(getDoc(dare(who)));
+      await assertFails(getDocs(collection(who, `groups/${G}/dares`)));
+    }
+  });
+  test("nobody can write a penalty from the client: not the player, not a payee, not an outsider", async () => {
+    for (const uid of ["bob", "alice", "carol"]) {
+      await assertFails(setDoc(doc(as(uid), `groups/${G}/penalties/bob_${TODAY}`), penaltyDoc));
+      await assertFails(updateDoc(pen(as(uid)), { status: "passed" }));
+      await assertFails(updateDoc(pen(as(uid)), { "payments.alice.s": "confirmed" }));
+      await assertFails(deleteDoc(pen(as(uid))));
+    }
+  });
+  test("nobody can cast, change or delete a vote from the client", async () => {
+    await assertFails(setDoc(doc(as("alice"), `groups/${G}/penalties/bob_${YESTERDAY}/votes/1_alice`), { voter: "alice", attempt: 1, vote: "not", ts: 2 }));
+    await assertFails(setDoc(doc(as("bob"), `groups/${G}/penalties/bob_${YESTERDAY}/votes/1_bob`), { voter: "bob", attempt: 1, vote: "done", ts: 2 }));
+    await assertFails(deleteDoc(vote(as("alice"))));
+  });
+  test("nobody can add, approve or report a dare from the client", async () => {
+    await assertFails(setDoc(doc(as("alice"), `groups/${G}/dares/x2`), { text: "Anything", by: "alice", createdAt: 1, approvedBy: "alice", active: true, reported: null }));
+    await assertFails(updateDoc(dare(as("bob")), { active: true, approvedBy: "bob" }));
+    await assertFails(deleteDoc(dare(as("bob"))));
+  });
+});
+
+describe("groups: Pay or Dare fields", () => {
+  const ref = (uid: string) => doc(as(uid), `groups/${G}`);
+  test("a new group can start in Pay or Dare (the default) or Money only, nothing else", async () => {
+    await assertSucceeds(setDoc(doc(as("carol"), "groups/NEW234"), { ...groupDoc(["carol"]), code: "NEW234", penaltyMode: "dare" }));
+    await assertSucceeds(setDoc(doc(as("carol"), "groups/NEW235"), { ...groupDoc(["carol"]), code: "NEW235", penaltyMode: "money" }));
+    await assertFails(setDoc(doc(as("carol"), "groups/NEW236"), { ...groupDoc(["carol"]), code: "NEW236", penaltyMode: "chaos" }));
+    await assertFails(setDoc(doc(as("carol"), "groups/NEW237"), { ...groupDoc(["carol"]), code: "NEW237", kicked: {} }));
+  });
+  test("members can't touch the server-only fields", async () => {
+    await assertFails(updateDoc(ref("alice"), { penaltyMode: "dare" }));
+    await assertFails(updateDoc(ref("alice"), { kicked: { bob: { round: 1, day: TODAY, why: "timeout", owed: 0 } } }));
+    await assertFails(updateDoc(ref("alice"), { endedEarly: YESTERDAY }));
+    await assertFails(updateDoc(ref("alice"), { winner: "alice" }));
+    await assertFails(updateDoc(ref("alice"), { checkedOn: TODAY }));
+  });
+  test("members can queue a valid mode, stake or rule for the next round", async () => {
+    await assertSucceeds(updateDoc(ref("bob"), { next: { penaltyMode: "dare" } }));
+    await assertSucceeds(updateDoc(ref("bob"), { "next.stake": 250, "next.rule": "none" }));
+    await assertFails(updateDoc(ref("bob"), { next: { penaltyMode: "chaos" } }));
+    await assertFails(updateDoc(ref("bob"), { next: { stake: 0 } }));
+    await assertFails(updateDoc(ref("bob"), { next: { stake: 100001 } }));
+    await assertFails(updateDoc(ref("bob"), { next: { round: 5 } }));
+    await assertFails(updateDoc(ref("carol"), { next: { penaltyMode: "dare" } })); // not a member
+  });
+});
+
+describe("groups: someone who was kicked", () => {
+  // bob was kicked in round 1: he's off the members list and in `kicked`
+  const kickBob = (round: number) => seed((db) => updateDoc(doc(db, `groups/${G}`), {
+    members: ["alice"], round, kicked: { bob: { round: 1, day: TODAY, why: "timeout", owed: 100 } },
+  }));
+  test("can't rejoin through the app in the round they were kicked in", async () => {
+    await kickBob(1);
+    await assertFails(updateDoc(doc(as("bob"), `groups/${G}`), { members: arrayUnion("bob") }));
+  });
+  test("can't rejoin through the app later either: the server does it (it resets `joined`)", async () => {
+    await kickBob(2);
+    await assertFails(updateDoc(doc(as("bob"), `groups/${G}`), { members: arrayUnion("bob") }));
+  });
+  test("someone who was never kicked can still join", async () => {
+    await kickBob(1);
+    await assertSucceeds(updateDoc(doc(as("carol"), `groups/${G}`), { members: arrayUnion("carol") }));
+  });
+  test("loses access to the group's players, feed, penalties and deck, but can still look up the group", async () => {
+    await seedPenalty();
+    await kickBob(1);
+    const bob = as("bob");
+    await assertFails(getDoc(doc(bob, `groups/${G}/players/alice`)));
+    await assertFails(getDocs(query(collection(bob, `groups/${G}/feed`), orderBy("ts", "desc"), limit(60))));
+    await assertFails(getDoc(doc(bob, `groups/${G}/penalties/bob_${YESTERDAY}`)));
+    await assertFails(getDocs(collection(bob, `groups/${G}/dares`)));
+    await assertFails(updateDoc(doc(bob, `groups/${G}/players/bob`), { tasks: [{ id: "t1", text: "x" }] }));
+    await assertSucceeds(getDoc(doc(bob, `groups/${G}`)));
+  });
+});
