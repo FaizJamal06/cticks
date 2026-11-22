@@ -62,10 +62,11 @@ export function PenaltyCard({ p, votes, deckEmpty, members, gid, uid, now, name 
   const run = async (action: string) => {
     if (busy) return;
     setBusy(true);
+    // The live listener can deliver the new dare before this request returns, so arm the spin first.
+    if (action === "dare" || action === "reroll") setSpun("pending");
     const r = await act(gid, p.id, action);
     setBusy(false);
-    if (!r) return;
-    if (action === "dare" || action === "reroll") setSpun(r.penalty.dare?.id || null);
+    if (!r) { setSpun(null); return; }
     if (action === "done" || action === "again") toast("Voting's open. Your group has until the morning check.", "nudge");
     if (action === "paid") toast("Marked as paid. They'll confirm.", "proud");
   };
@@ -107,7 +108,7 @@ export function PenaltyCard({ p, votes, deckEmpty, members, gid, uid, now, name 
   if (p.status === "dare" && p.dare) return (
     <div className={`card pen${soon ? " urgent" : ""}`}>
       <h2>Your dare <span className="tag">{p.rerollsLeft ? "1 reroll left" : "no rerolls left"}</span></h2>
-      <div className="tik-row spin-row"><Tik mood="nudge" size={40} /><Reel key={p.dare.id} text={p.dare.text} spin={spun === p.dare.id} /></div>
+      <div className="tik-row spin-row"><Tik mood="nudge" size={40} /><Reel key={p.dare.id} text={p.dare.text} spin={spun !== null} /></div>
       <div className="note">Do it, send the video or photo to your group chat, then tap Done. cTicks never sees your proof.</div>
       {clock}
       <button className="btn" disabled={busy} onClick={() => run("done")}>Done, I sent the proof</button>
