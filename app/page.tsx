@@ -92,12 +92,12 @@ function Lock({ who, time, day, children, buzz }: { who: string; time: string; d
   );
 }
 
-/** One row of round-grid cells. One char per day: ✓ done, ✗ miss, . not yet, a digit = today (dashed). */
+/** One row of round-grid cells. One char per day: ✓ done, ✗ miss, 🎭 dared away, ? undecided, . not yet, a digit = today (dashed). */
 function Cells({ marks }: { marks: string }) {
   return (
     <div className="cells">
       {[...marks].map((m, i) => (
-        <div key={i} className={`cell${m === "✓" ? " done" : m === "✗" ? " miss" : /\d/.test(m) ? " today" : ""}`}>{m === "." ? "" : m}</div>
+        <div key={i} className={`cell${m === "✓" ? " done" : m === "✗" ? " miss" : m === "🎭" ? " dared" : m === "?" ? " pending" : /\d/.test(m) ? " today" : ""}`}>{m === "." ? "" : m}</div>
       ))}
     </div>
   );
@@ -188,7 +188,7 @@ export default function Landing() {
                 </div>
               </div>
               <div className="chips rv" style={at(500, 0)}>
-                <span className="chip">7 days</span><span className="chip">₹100 / missed day</span><span className="chip">Finish every task</span>
+                <span className="chip">7 days</span><span className="chip">₹100 / missed day</span><span className="chip">Pay or Dare</span><span className="chip">Finish every task</span>
               </div>
               <Crossfade from="sleeping" to="proud" size={120} d={580} s={1400} />
             </div>
@@ -312,24 +312,21 @@ export default function Landing() {
             <div className="stack">
               <Blk>
               <Lock who="Aryaan's phone" time="9:02" day="Thursday" buzz={700}>
-                <Notif d={300} time="9:02 am" title="💸 Aryaan missed yesterday" body="Running total: Aryaan owes Shanayaa ₹100." />
+                <Notif d={300} time="9:02 am" title="💸 You missed yesterday" body="Pay ₹100 or take a dare. Decide by 9am Sat." />
               </Lock>
               </Blk>
               <Blk>
-              <div className="card ledger rv" style={at(280, 16)}>
-                <h2>The money <span className="tag">₹100 / missed day</span></h2>
-                <div className="flip">
-                  <div className="flip-front" style={at(900)} aria-hidden="true">
-                    <div className="big">All square</div>
-                    <div className="meta">Missed days this round: you 0 · Shanayaa 0</div>
-                  </div>
-                  <div className="flip-back" style={at(1150)}>
-                    <div className="big lose">You owe Shanayaa ₹100</div>
-                    <div className="meta">Missed days this round: you 1 · Shanayaa 0</div>
-                  </div>
+              <div className="card pen rv" style={at(280, 16)}>
+                <h2>Penalty <span className="tag">₹100 / person</span></h2>
+                <div className="tik-row pen-head"><Tik mood="collector" size={40} /><div><b>You missed Wednesday.</b><span>Pay ₹100 or take a dare.</span></div></div>
+                <div className="deadline">2d left · by 9am Sat</div>
+                <div className="row2">
+                  <span className="btn ghost">Pay ₹100</span>
+                  <span className="btn press" style={at(900)}>Take a dare 🎲</span>
                 </div>
+                <blockquote className="dare rv" style={{ ...at(1150, 8), marginTop: 12 }}>Sing the chorus of a pop song out loud, full volume.</blockquote>
               </div>
-              <span className="side-tik rv" style={at(1200, 12)}><Tik mood="collector" size={72} still={false} /></span>
+              <span className="side-tik rv" style={at(1300, 12)}><Tik mood="nudge" size={72} still={false} /></span>
               </Blk>
               <Blk>
               <div className="card rv" style={at(280, 16)}>
@@ -340,7 +337,7 @@ export default function Landing() {
                     <div className="who">You</div>
                     <div className="cells">
                       <div className="cell done">✓</div><div className="cell done">✓</div>
-                      <div className="cell-stack"><div className="cell today">2</div><div className="cell miss flip-in" style={at(600)}>✗</div></div>
+                      <div className="cell-stack"><div className="cell today">2</div><div className="cell pending flip-in" style={at(600)}>?</div></div>
                       <div className="cell today">0</div><div className="cell" /><div className="cell" /><div className="cell" />
                     </div>
                   </div>
@@ -350,8 +347,8 @@ export default function Landing() {
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(120, 8)}>The gym did not wait. At midnight Wednesday locks in, and in the morning everyone gets the news.</p>
-            <p className="small rv" style={at(180, 6)}>You can only tick your own tasks, and only today&apos;s. No backfilling Wednesday on Thursday.</p>
+            <p className="rv" style={at(120, 8)}>The gym did not wait. At midnight Wednesday locks in, and in the morning Aryaan gets a choice: pay Shanayaa ₹100, or take a dare.</p>
+            <p className="small rv" style={at(180, 6)}>Do the dare, send the proof to your group chat, and the group votes in the app. Proof goes to your group chat. cTicks holds the vote.</p>
           </Scene>
 
           <Scene id="final" kicker="monday, 9:01am" title="Sunday night, it's over." flip split shape marks={<><Wk d="S" className="mk-sun" /><Wk d="✓" className="end" /></>} stage={
@@ -359,7 +356,7 @@ export default function Landing() {
               <Blk>
               <Lock who="Aryaan's phone" time="9:01" day="Monday" buzz={700}>
                 <Notif d={300} time="9:01 am" title="🏁 Round 1 is over"
-                  body="Final: Aryaan owes Shanayaa ₹100. Settle up, then start round 2 in the app." />
+                  body="Everything's settled. Start round 2 in the app." />
               </Lock>
               </Blk>
               <Blk>
@@ -371,10 +368,10 @@ export default function Landing() {
               <Blk>
               <div className="card ledger rv" style={at(280, 16)}>
                 <h2>The money <span className="tag">₹100 / missed day</span></h2>
-                <div className="big lose">Final: You owe Shanayaa ₹100</div>
-                <div className="meta">Missed days this round: you 2 · Shanayaa 1</div>
+                <div className="big">All settled</div>
+                <div className="meta">Missed days this round: you 2 · Shanayaa 1. Settled this round: ₹200.</div>
                 <div className="grid ledger-grid">
-                  <div className="grow"><div className="who">You</div><Cells marks="✓✓✗✓✓✗✓" /></div>
+                  <div className="grow"><div className="who">You</div><Cells marks="✓✓🎭✓✓✗✓" /></div>
                   <div className="grow"><div className="who">Shanayaa</div><Cells marks="✓✓✓✓✗✓✓" /></div>
                 </div>
                 <span className="btn press next-round" style={at(1300)}>Start the next round</span>
@@ -383,8 +380,8 @@ export default function Landing() {
               </Blk>
             </div>
           }>
-            <p className="rv" style={at(120, 8)}>Shanayaa slipped on Friday, Aryaan slipped again on Saturday. Misses cancel out, so Aryaan owes Shanayaa one day&apos;s stake.</p>
-            <p className="rv" style={at(180, 8)}>He pays on UPI. cTicks never touches your money, it just keeps the score honest. Then: round 2.</p>
+            <p className="rv" style={at(120, 8)}>Aryaan sang the chorus, sent the video to the group, and Shanayaa voted it through. That miss cost nothing: 🎭 on the grid.</p>
+            <p className="rv" style={at(180, 8)}>Shanayaa slipped on Friday, Aryaan on Saturday. Each paid ₹100 on UPI, one miss at a time. cTicks never touches your money, it just keeps the score honest. Then: round 2.</p>
           </Scene>
           </div>
 
@@ -433,12 +430,17 @@ export default function Landing() {
             <div className="faq">
               {[
                 ["Is it free?", "Yes. No ads, no subscription."],
-                ["Does cTicks move money?", "No. It keeps score and tells you who owes whom. You settle up yourselves, on UPI or however you like."],
+                ["What's Pay or Dare?", "Miss a day and you choose: pay the stake to each friend, or spin a dare. Do it, send the proof to your group chat, and the group votes in the app. Paying is always an option."],
+                ["Who sees my dare video?", "Only the people you send it to. cTicks never sees, uploads or stores videos or photos. Proof goes to your group chat. cTicks holds the vote."],
+                ["Can I get kicked out?", "In Pay or Dare, yes: ignore a penalty for 48 hours, fail a dare twice and then don't pay, or miss 3 days in a row. You can rejoin when the next round starts."],
+                ["Are the dares safe?", "They're meant to be silly, not risky: sing a chorus, a 30-second dance. Custom dares need a second person's OK, and anything dangerous, illegal or public is off limits. Anyone can report a dare."],
+                ["Can we just play for money?", "Yes. Pick Money only when you start a challenge, or switch in settings from the next round."],
+                ["Does cTicks move money?", "No. It keeps score and tells you who owes whom. You pay on UPI or however you like."],
                 ["Can you cheat?", "Not easily. You can only tick your own tasks, and only today's. “Today” comes from our server in India time, so changing your phone's clock does nothing. If someone edits their task list, everyone gets told."],
                 ["Does it work on iPhone?", "Yes, on iOS 16.4 or newer, once you add it to your Home Screen from Safari. Older iPhones can still use it, just without notifications."],
-                ["How many people can play?", "2 to 6 per challenge. Each missed day, you owe the stake to every other player. cTicks nets it all out."],
+                ["How many people can play?", "2 to 6 per challenge. A missed day costs the stake to every other player, unless you take a dare and it passes."],
                 ["Does it work on a laptop?", "Yes, in any modern browser. Notifications work there too."],
-                ["When does a day end?", "At midnight, India time. The warning comes around 9pm and the results around 9am."],
+                ["When does a day end?", "At midnight, India time. The warning comes around 9pm. Results, new penalties and every Pay or Dare deadline land at 9am."],
               ].map(([q, a]) => (
                 <details key={q}><summary>{q}</summary><p>{a}</p></details>
               ))}
