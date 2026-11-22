@@ -5,6 +5,8 @@ export const TZ = "Asia/Kolkata";
 
 export type Rule = "all" | "none"; // all = every task must be done; none = only a zero-task day is a miss
 export type Task = { id: string; text: string };
+export type PenaltyMode = "money" | "dare"; // money = net out per pair (the original game); dare = Pay or Dare + eliminations
+export type Kicked = { round: number; day: string; why: "timeout" | "streak" | "unpaid"; owed: number };
 export type Group = {
   code: string;
   members: string[];
@@ -14,7 +16,14 @@ export type Group = {
   start: string; // YYYY-MM-DD, first day of the current round
   round: number;
   createdBy: string;
+  penaltyMode?: PenaltyMode; // missing = "money" (groups made before Pay or Dare)
+  next?: { penaltyMode?: PenaltyMode; stake?: number; rule?: Rule }; // applied when the next round starts
+  kicked?: Record<string, Kicked>; // players currently out (server-only)
+  endedEarly?: string; // last day of a round that ended by elimination
+  winner?: string; // the last one standing
+  checkedOn?: string; // last day the 9am check ran for this group (server-only)
 };
+export const isDare = (g: Group) => g.penaltyMode === "dare";
 export type Player = {
   uid: string;
   name: string;
@@ -36,8 +45,22 @@ export const diffDays = (a: string, b: string) => Math.round((toUTC(b) - toUTC(a
 export const prettyDay = (k: string, opts: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" }) =>
   new Date(toUTC(k)).toLocaleDateString("en-IN", { ...opts, timeZone: "UTC" });
 
+/** Every day of the round as scheduled (the grid shows all of them, even after an early end). */
 export const roundDays = (g: Group) => Array.from({ length: g.days }, (_, i) => addDays(g.start, i));
-export const roundEnd = (g: Group) => addDays(g.start, g.days - 1);
+/** Last day that counts: the scheduled end, or earlier if the round ended by elimination. */
+export const roundEnd = (g: Group) => {
+  const end = addDays(g.start, g.days - 1);
+  return g.endedEarly && g.endedEarly < end ? g.endedEarly : end;
+};
+
+/** 09:00 India time on `day`, as epoch ms. Every Pay or Dare deadline lands here: it's when the morning check runs. */
+export const nineAm = (day: string) => toUTC(day) + (9 * 60 - 330) * 60_000;
+/** The first 9am that is at least `hours` after `ms`. */
+export function nextNine(ms: number, hours: number) {
+  const t = ms + hours * 3_600_000;
+  const d = dayKey(new Date(t));
+  return nineAm(d) >= t ? nineAm(d) : nineAm(addDays(d, 1));
+}
 
 export function roundState(g: Group, today: string): { phase: "upcoming" | "active" | "over"; day: number } {
   if (today < g.start) return { phase: "upcoming", day: 0 };
@@ -60,8 +83,28 @@ export function isMiss(g: Group, p: Player, k: string): boolean {
 }
 
 /** Finished days of the current round that count for this player. */
-export const countedDays = (g: Group, p: Player, today: string) =>
-  roundDays(g).filter((k) => k < today && k >= p.joined);
+export const countedDays = (g: Group, p: Player, today: string) => {
+  const end = roundEnd(g);
+  return roundDays(g).filter((k) => k < today && k >= p.joined && k <= end);
+};
+
+/**
+ * Missed days in a row ending at `day`: consecutive calendar days that each have a penalty.
+ * Built from penalty days so it carries across a round boundary when the next round starts the very next day;
+ * any day without a penalty (a clean day, a day between rounds) breaks it.
+ */
+export function missesInARow(penaltyDays: Iterable<string>, day: string): number {
+  const set = new Set(penaltyDays);
+  let n = 0;
+  for (let k = day; set.has(k) && n < 400; k = addDays(k, -1)) n++;
+  return n;
+}
+
+/** Someone who was kicked can come back once the round they were kicked in is over and a new one has started. */
+export const canRejoin = (g: Group, uid: string) => {
+  const k = g.kicked?.[uid];
+  return !!k && k.round < g.round && !g.members.includes(uid) && g.members.length < 6;
+};
 
 export const missedDays = (g: Group, p: Player, today: string) =>
   countedDays(g, p, today).filter((k) => isMiss(g, p, k));

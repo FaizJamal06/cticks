@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --no-warnings --test tests/logic.test.ts",
+    "test": "node --experimental-strip-types --no-warnings --test tests/logic.test.ts tests/penalty.test.ts",
     "test:rules": "firebase emulators:exec --only firestore --project demo-payup \"node --experimental-strip-types --no-warnings --test tests/rules.test.ts\"",
     "postinstall": "node scripts/postinstall.mjs"
   },

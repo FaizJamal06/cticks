@@ -1,20 +1,26 @@
-// Runs once a day around 9am India time (vercel.json: 03:30 UTC).
-// Tells everyone who missed yesterday and where the money stands; announces the final score when a round ends.
+// Runs once a day around 9am India time (vercel.json: 03:30 UTC). Every Pay or Dare deadline is 9am, so this is
+// where penalties are created, votes close, payments auto-confirm and kicks happen (lib/penalty-server.ts).
+// Money only groups also get the original "who missed yesterday / running total / final score" push.
+// `?gid=CODE` limits the run to one group (tests on previews never touch real groups).
 import { NextResponse } from "next/server";
 import { pushTo } from "@/lib/admin";
-import { allGroups, cronAuthorized } from "@/lib/cron";
-import { addDays, dayKey, inr, isMiss, ledger, roundDays, roundEnd } from "@/lib/logic";
+import { allGroups, cronAuthorized, onlyGroup } from "@/lib/cron";
+import { addDays, dayKey, inr, isDare, isMiss, ledger, roundDays, roundEnd } from "@/lib/logic";
+import { morningCheck } from "@/lib/penalty-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const today = dayKey();
+  const now = Date.now();
+  const today = dayKey(new Date(now));
   const yesterday = addDays(today, -1);
   let sent = 0;
 
-  for (const { group, players } of await allGroups()) {
+  for (const { group, players } of await allGroups(onlyGroup(req))) {
+    sent += (await morningCheck(group.code, now)).sent;
+    if (isDare(group)) continue;
     if (players.length < 2 || !roundDays(group).includes(yesterday)) continue;
     const name = (id: string) => players.find((p) => p.uid === id)?.name || "Someone";
     const missed = players.filter((p) => yesterday >= p.joined && isMiss(group, p, yesterday));
