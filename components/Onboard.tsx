@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { addDays, dayKey, inr, prettyDay, ruleLabel, type Group, type Rule } from "@/lib/logic";
-import { authError, logOut, newCode, postFeed } from "@/lib/client";
+import { addDays, canRejoin, dayKey, inr, isDare, prettyDay, ruleLabel, type Group, type PenaltyMode, type Rule } from "@/lib/logic";
+import { api, authError, logOut, newCode, postFeed } from "@/lib/client";
+import { modeLabel } from "@/lib/feed";
+import { ModePicker } from "./Sheets";
 import TaskEditor, { blankTasks, cleanTasks, RulePicker } from "./TaskEditor";
 import { Logo } from "./Tik";
 
@@ -15,6 +17,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
   const [days, setDays] = useState("7");
   const [startWhen, setStartWhen] = useState<"today" | "tomorrow">("tomorrow");
   const [rule, setRule] = useState<Rule>("all");
+  const [penaltyMode, setPenaltyMode] = useState<PenaltyMode>("dare"); // new groups default to Pay or Dare
   const [code, setCode] = useState("");
   const [found, setFound] = useState<Group | null>(null);
   const [err, setErr] = useState("");
@@ -65,7 +68,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
         try {
           await setDoc(doc(db, "groups", c), {
             code: c, members: [user.uid], createdBy: user.uid, createdAt: Date.now(),
-            stake: amount, rule, days: Number(days), round: 1,
+            stake: amount, rule, days: Number(days), round: 1, penaltyMode,
             start: startWhen === "today" ? today : addDays(today, 1),
           });
           gid = c;
@@ -81,6 +84,12 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
     if (!list.length) return setErr("Add at least one task.");
     setErr(""); setBusy(true);
     try {
+      if (found.kicked?.[user.uid]) {
+        // kicked players come back through the server (it resets `joined` so earlier days never count)
+        if (!canRejoin(found, user.uid)) throw new Error(`You're out of this challenge until round ${found.kicked[user.uid].round + 1} starts.`);
+        if (await api("/api/group", { gid: found.code, action: "rejoin" })) await setDoc(doc(db, "users", user.uid), { name, groupId: found.code }, { merge: true });
+        return;
+      }
       if (!found.members.includes(user.uid)) {
         if (found.members.length >= 6) throw new Error("That challenge is full (6 people max).");
         await updateDoc(doc(db, "groups", found.code), { members: arrayUnion(user.uid) });
@@ -124,6 +133,8 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
           </div>
           <label className="f">WHAT COUNTS AS A MISSED DAY</label>
           <RulePicker value={rule} onChange={setRule} />
+          <label className="f">WHEN SOMEONE MISSES</label>
+          <ModePicker value={penaltyMode} onChange={setPenaltyMode} />
         </div>
       ) : (
         <div className="card">
@@ -136,7 +147,7 @@ export default function Onboard({ user, name }: { user: User; name: string }) {
           {found && (
             <div className="note" style={{ color: "var(--ink)" }}>
               ✓ Found it. {inr(found.stake)} per missed day · {found.days}-day rounds · round {found.round} starts {prettyDay(found.start)} ·
-              a miss = {ruleLabel(found.rule)} · {found.members.length} {found.members.length === 1 ? "person" : "people"} in.
+              a miss = {ruleLabel(found.rule)} · {modeLabel(isDare(found) ? "dare" : "money")} · {found.members.length} {found.members.length === 1 ? "person" : "people"} in.
             </div>
           )}
         </div>

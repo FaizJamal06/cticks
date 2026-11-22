@@ -37,6 +37,25 @@ export async function postFeed(gid: string, item: Omit<FeedItem, "by" | "ts">) {
   }
 }
 
+/** POSTs to one of our API routes with the Firebase ID token. Shows the server's error as a toast and returns null. */
+export async function api<T = Record<string, unknown>>(path: string, body: Record<string, unknown>): Promise<T | null> {
+  const user = auth?.currentUser;
+  if (!user) return null;
+  try {
+    const res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast(data.error || "Something went wrong. Try again."); return null; }
+    return data as T;
+  } catch {
+    toast("No internet connection.");
+    return null;
+  }
+}
+
 // ---------- device / notification support ----------
 export const isIOS = () =>
   /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
