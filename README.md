@@ -29,10 +29,10 @@ The landing page is at `/`, the app at `/app`.
 7. **Project settings → Service accounts → Generate new private key.** This downloads a JSON file. Keep it secret and never commit it.
 
 ### 2. Get the code
-It's already on GitHub at `FaizJamal06/payup` (private). To work on it locally: `git clone https://github.com/FaizJamal06/payup && cd payup && npm install`.
+It's already on GitHub at `FaizJamal06/cticks` (private; renamed from `payup`). To work on it locally: `git clone https://github.com/FaizJamal06/cticks && cd cticks && npm install`.
 
 ### 3. Deploy on Vercel
-1. <https://vercel.com/new> → import the `payup` repo.
+1. <https://vercel.com/new> → import the `cticks` repo.
 2. Add the environment variables listed in [`.env.example`](.env.example):
    - the six `NEXT_PUBLIC_FIREBASE_*` values from steps 5–6
    - `FIREBASE_SERVICE_ACCOUNT`: the **entire** contents of the JSON from step 7, pasted as one value

@@ -1,6 +1,6 @@
 # STATUS: cTicks (formerly Pay Up)
 
-_Last updated: 21 Nov 2026. Update this file whenever something gets done, tested or found broken._
+_Last updated: 22 Nov 2026. Update this file whenever something gets done, tested or found broken._
 
 **State in one line:** cTicks lives at <https://cticks.vercel.app> (landing at `/`, app at `/app`); the old domain redirects there. Next: the one-time phone migration, then the on-phone test plan (both in section 4).
 
@@ -9,11 +9,18 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 | Live site | <https://cticks.vercel.app> (landing) · <https://cticks.vercel.app/app> (the app) |
 | Old domain | `payup-xi.vercel.app` stays attached and 308-redirects to cticks.vercel.app, keeping the path and query (old `?join=` links still work) |
 | Firebase project | `payup-c1ee8` (Firestore `asia-south1`, Spark plan) |
-| Vercel project | `cticks`, auto-deploys `main` from `FaizJamal06/payup`, Node 24.x |
+| Vercel project | `cticks`, auto-deploys `main` from `FaizJamal06/cticks` (repo renamed from `payup`; old URLs redirect), Node 24.x |
 | Crons | `/api/cron/reminder` 15:30 UTC (~9pm IST), `/api/cron/results` 03:30 UTC (~9am IST) |
 | Secrets | `.env.local` (git-ignored) and Vercel Production env. Service account JSON lives outside the repo |
 
 ## 1. Done ✅
+
+**Landing polish (22 Nov 2026)**
+- [x] Background with depth: grain, a faint ✓ and dial-tick pattern, mood glows that follow the story (lime → amber at 9pm → coral at the miss → lime), big faded brand shapes with scroll-driven drift. All CSS/SVG data URIs. See [docs/BRAND.md](docs/BRAND.md#landing-page)
+- [x] The week thread: a line in the left gutter from the pact to the round's end with a marker per day, and a sticky Tik riding it whose mood follows the story
+- [x] Spacing tokens on a 4/8px scale, one section rhythm (`clamp(64px, 10vh, 128px)`), one content grid, a type scale. Desktop story 35% shorter
+- [x] Sticky header (transparent, then blurred with a hairline) with a ghost Log in button; a compact CTA in the header (desktop) or a bottom bar (phones) after the hero, hidden near the final CTA; the footer closes the story
+- [x] One shared IntersectionObserver; the page's own JS grew by 121 bytes gzipped. Reduced motion: filled thread, no drift, no riding Tik
 
 **Domain move (21 Nov 2026)**
 - [x] Vercel project renamed `payup` → `cticks`; `cticks.vercel.app` added and made the main domain; `payup-xi.vercel.app` kept as a 308 redirect (path + query kept)
@@ -102,6 +109,7 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 | New domain cticks.vercel.app (21 Nov) | curl + headless Chrome after deploy `c369cce`: `/`, `/app`, invite 200; og:image `https://cticks.vercel.app/og.png`; manifest `cTicks`, id `/`, start_url `/app`; service worker 200 with the `payup-c1ee8` config and `openWindow('/app')`; both crons 401 with no or a wrong secret; `/api/notify` 401; `/app` registers the SW on the new origin, no console errors. The authorised cron call was skipped because it would have pushed to the 3 real players | ✅ |
 | Old domain redirect | `payup-xi.vercel.app/?join=K7XQ2M&from=Shanayaa`, `/app`, `/login?join=…`, the SW: all 308 to the same path + query on cticks.vercel.app; in Chrome the old invite link shows the card with "Shanayaa" and code `K7XQ2M` | ✅ |
 | Auto-deploy after the Vercel rename | Push of `c369cce` to `main` → production deploy READY on project `cticks` | ✅ |
+| Landing polish (22 Nov) | Prod build in Chromium at 320/360/390/430/1440: no horizontal scroll; 0 of 81 text elements below WCAG AA over the glows (pixel-sampled); visible text identical to the previous version; reduced motion; Home/End/anchor jumps leave no day marker wrong; sticky header and riding Tik still stick with `overflow: clip` | ✅ |
 
 ## 3. Not tested yet ⚠️ (needs real phones)
 
@@ -133,8 +141,8 @@ _Last updated: 21 Nov 2026. Update this file whenever something gets done, teste
 ## 4. To do: your next steps 📋
 
 **Setup:** done (Firebase project, rules, auth, FCM, Vercel, env, authorized domain).
-- [ ] Firebase Auth → Authorized domains: add `cticks.vercel.app` (console only; the CLI can't). Keep `payup-xi.vercel.app` in the list, it's harmless
-- [ ] GitHub repo rename `payup` → `cticks` (Settings → General → Repository name), then update the git remote and check the next push still auto-deploys
+- [x] Firebase Auth → Authorized domains: `cticks.vercel.app` and the `pay-or-dare` preview domain added (22 Nov)
+- [x] GitHub repo renamed `payup` → `cticks`; git remote updated; Vercel's Git connection followed the rename (pushes still auto-deploy)
 
 **One-time migration to cticks.vercel.app (21 Nov 2026), on every phone that had the old app:**
 
@@ -200,6 +208,7 @@ Then one of you ticks a task and the other should get the push once. Expect the 
 - **Push tokens from the old domain stay in `users/{uid}.fcmTokens`** until FCM rejects them. While the old site still has notification permission on a phone, that phone gets each push twice (once via the old site). Clearing the old site's data, or deleting the old iPhone app, kills the token and the next push prunes it.
 - **The landing story is hand-written copy** that mirrors the app's real push text and screens. If notification wording or the UI changes, update `app/page.tsx` and `docs/WEBSITE_COPY.md` to match.
 - **Landing JS is the Next/React runtime (~171 KB gz).** Our own landing code is three small inline scripts. Going lower would mean serving `/` as plain HTML outside Next.
+- **Landing: the brand shapes' drift uses CSS scroll-driven animations** (Chrome/Edge, Safari 26+). Firefox shows them still. The blurred header and sticky Tik are verified in Chromium only; check them on a real iPhone.
 - **The friend's name on the invite page comes from the link** (`&from=`), not the database, so anyone can craft a link with any name. It's shown as plain text and the code is still checked on join.
 
 ## 6. Ideas / backlog 💡

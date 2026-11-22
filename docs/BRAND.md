@@ -58,6 +58,34 @@ Rules:
 - **Space Grotesk** (400/500/700): headlines, body, the wordmark.
 - **JetBrains Mono** (400/600): labels, kickers, codes, small UI text.
 
+## Landing page
+
+All of it lives in `app/landing.css` and `app/page.tsx`. CSS and inline SVG only, no images.
+
+- **Background system** (bottom to top):
+  - mood glows per section (`--glow` / `--ga` / `--gx` / `--gy` on each section's `::before`, spilling 25% into its neighbours so colour changes with no edges): lime for the ticks, amber from the nudge to 9pm, coral at the miss, lime at the end,
+  - big faded brand shapes on `.has-shape` (watch dial, oversized ✓, stopwatch at 9) drifting with scroll-driven `animation-timeline: view()`, 4–10% opacity,
+  - a loose grid of tiny ✓s and dial ticks at 5%, masked out toward the edges,
+  - fixed SVG grain at 7%.
+
+  Body text must stay WCAG AA on every glow; check it after any colour change.
+- **Spacing tokens:**
+  - `--s1`…`--s24` = 4, 8, 12, 16, 20, 24, 32, 48, 64, 96px; use only these.
+  - `--rhythm: clamp(64px, 10vh, 128px)` between sections (each pads half top and bottom).
+  - One grid: `--maxw: 1120px`, `--gutter` 20px (32px from 600px), edges via `--edge-l` / `--edge-r` (safe-area aware).
+  - Type scale `--fs-hero` / `--fs-h1` / `--fs-h2` / `--fs-h3` / `--fs-lede` / `--fs-body` / `--fs-small` / `--fs-kicker` / `--fs-cap`.
+- **The week thread:**
+  - A 2px line in the left gutter (`--thread-x`) from the pact to the round's end.
+  - Day markers (`<Wk>`, `data-wk`) fill lime once the observer line (70% down the screen) passes them.
+  - A 28px Tik rides the line with `position: sticky` (no JS) and changes mood at the nudge, 9pm, the miss and the end.
+  - Reduced motion: filled line, all markers lit, Tik parked at the end.
+- **Header behaviour:**
+  - Sticky, 60px + safe area, transparent at the top.
+  - `html[data-scrolled]` (set by a sentinel) fades in a blurred bar with a hairline.
+  - Log in is a ghost button (44px tall).
+  - After the hero's CTA scrolls away (`data-hero-out`), "Start your first round" appears in the header on desktop or as a bottom bar on phones. Both hide while the final CTA is on screen (`data-cta-near`) and never show on the invite card.
+- **Motion:** every scene enters the same way: kicker 0ms, heading 40ms (rises furthest), body 120ms, small print 180ms, the stage's lead at 280ms, then the story beats inside the mock. Transform and opacity only, one shared IntersectionObserver.
+
 ## Voice
 
 - Short, punchy, casual. A friend talking, not a bank.
