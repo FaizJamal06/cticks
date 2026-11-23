@@ -5,6 +5,7 @@ import { deleteToken, getMessaging, getToken, isSupported, onMessage } from "fir
 import { app, auth, db, VAPID_KEY } from "./firebase";
 import type { FeedItem } from "./feed";
 import type { Mood } from "./tik";
+import { APP_VERSION, UPDATE_MSG } from "./version";
 
 // ---------- toasts ----------
 /** Shows an in-app toast. `mood` adds a small Tik where it fits. */
@@ -44,10 +45,11 @@ export async function api<T = Record<string, unknown>>(path: string, body: Recor
   try {
     const res = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await user.getIdToken()}`, "X-App-Version": String(APP_VERSION) },
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 426) window.dispatchEvent(new Event("payup-stale")); // shows the Reload bar
     if (!res.ok) { toast(data.error || "Something went wrong. Try again."); return null; }
     return data as T;
   } catch {
@@ -158,6 +160,10 @@ export async function listenForeground() {
 const ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => ALPHA[b % ALPHA.length]).join("");
 export const newId = () => Math.random().toString(36).slice(2, 9);
+
+/** A write the rules refused from Settings: after an update that's almost always an old copy of the app. */
+export const settingsError = (e: unknown) =>
+  (e as { code?: string })?.code === "permission-denied" ? UPDATE_MSG : authError(e);
 
 export function authError(e: unknown): string {
   const code = (e as { code?: string })?.code || "";

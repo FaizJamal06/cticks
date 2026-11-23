@@ -125,8 +125,20 @@ describe("groups: member edits", () => {
   const ref = (uid: string) => doc(as(uid), `groups/${G}`);
   test("members can change stake and rule (Settings → Save rules)", () =>
     assertSucceeds(updateDoc(ref("bob"), { stake: 200, rule: "none" })));
-  test("members can start a new round", () =>
-    assertSucceeds(updateDoc(ref("bob"), { start: TOMORROW, days: 14, round: 2 })));
+  test("members can't start a round themselves: the server does it (an old app's direct write is denied and changes nothing)", async () => {
+    await assertFails(updateDoc(ref("bob"), { start: TOMORROW, days: 14, round: 2 }));
+    await assertFails(updateDoc(ref("bob"), { round: 2 }));
+    await assertFails(updateDoc(ref("bob"), { start: TOMORROW }));
+    await assertFails(updateDoc(ref("bob"), { days: 14 }));
+    const after = (await getDoc(ref("bob"))).data();
+    assert.equal(after?.round, 1);
+    assert.equal(after?.start, TODAY);
+    assert.equal(after?.days, 7);
+  });
+  test("members can't touch members, code or createdAt either", async () => {
+    await assertFails(updateDoc(ref("bob"), { code: "ZZZ999" }));
+    await assertFails(updateDoc(ref("bob"), { createdAt: 2 }));
+  });
   test("members can't change createdBy", () => assertFails(updateDoc(ref("bob"), { createdBy: "bob" })));
   test("non-members can't change anything", async () => {
     await assertFails(updateDoc(ref("carol"), { stake: 1 }));
@@ -202,8 +214,9 @@ describe("players: joined, uid and tasks can't be used to dodge misses", () => {
 });
 
 describe("groups: stake, rule, days and round must be valid", () => {
-  const create = (over: Record<string, unknown>) =>
-    setDoc(doc(as("carol"), "groups/NEW234"), forCreate({ ...groupDoc(["carol"]), code: "NEW234", ...over }));
+  // a fresh doc each time: re-setting an existing group would be an update, which only the server may do to days
+  const create = (over: Record<string, unknown>, id = "NEW234") =>
+    setDoc(doc(as("carol"), `groups/${id}`), forCreate({ ...groupDoc(["carol"]), code: id, ...over }));
   const edit = (over: Record<string, unknown>) => updateDoc(doc(as("bob"), `groups/${G}`), forUpdate(over));
   const bad: Record<string, unknown>[] = [
     { stake: -5 }, { stake: 100001 }, { stake: "abc" }, { stake: null },
@@ -214,16 +227,16 @@ describe("groups: stake, rule, days and round must be valid", () => {
     for (const b of bad) await assertFails(create(b));
   });
   test("create: every allowed value works", async () => {
-    for (const days of [7, 14, 21, 30]) await assertSucceeds(create({ days }));
-    await assertSucceeds(create({ stake: 100000, rule: "none" }));
-    await assertSucceeds(create({ stake: 1 }));
+    for (const days of [7, 14, 21, 30]) await assertSucceeds(create({ days }, `D${days}`));
+    await assertSucceeds(create({ stake: 100000, rule: "none" }, "MAXSTK"));
+    await assertSucceeds(create({ stake: 1 }, "MINSTK"));
   });
   test("update: bad values are denied", async () => {
     for (const b of bad) await assertFails(edit(b));
   });
   test("update: valid edits still work", async () => {
     await assertSucceeds(edit({ stake: 100000, rule: "none" }));
-    await assertSucceeds(edit({ days: 30, round: 2, start: TOMORROW }));
+    await assertSucceeds(edit({ stake: 1 }));
   });
 });
 
@@ -348,6 +361,24 @@ describe("groups: Pay or Dare fields", () => {
     await assertFails(updateDoc(ref("bob"), { next: { stake: 100001 } }));
     await assertFails(updateDoc(ref("bob"), { next: { round: 5 } }));
     await assertFails(updateDoc(ref("carol"), { next: { penaltyMode: "dare" } })); // not a member
+  });
+});
+
+describe("groups: Pay or Dare groups queue stake and rule for the next round", () => {
+  const ref = (uid: string) => doc(as(uid), `groups/${G}`);
+  beforeEach(() => seed((db) => updateDoc(doc(db, `groups/${G}`), { penaltyMode: "dare" })));
+  test("stake and rule can't change mid-round (open penalties have fixed amounts)", async () => {
+    await assertFails(updateDoc(ref("bob"), { stake: 200 }));
+    await assertFails(updateDoc(ref("bob"), { rule: "none" }));
+  });
+  test("they're queued in next instead, and the mode can be queued too", async () => {
+    await assertSucceeds(updateDoc(ref("bob"), { "next.stake": 200, "next.rule": "none" }));
+    await assertSucceeds(updateDoc(ref("bob"), { "next.penaltyMode": "money" }));
+    await assertSucceeds(updateDoc(ref("bob"), { "next.penaltyMode": deleteField() }));
+  });
+  test("still no direct round start or mode change", async () => {
+    await assertFails(updateDoc(ref("bob"), { start: TOMORROW, days: 14, round: 2 }));
+    await assertFails(updateDoc(ref("bob"), { penaltyMode: "money" }));
   });
 });
 

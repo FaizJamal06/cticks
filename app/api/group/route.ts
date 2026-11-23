@@ -1,13 +1,15 @@
 // Round changes that need the server: starting the next round (settles the outgoing round's last penalties and
 // applies queued settings) and rejoining after a kick (resets `joined`, which the rules never let a client do).
 import { NextResponse } from "next/server";
-import { callerUid, rejoin, startRound } from "@/lib/penalty-server";
+import { callerUid, rejoin, staleApp, startRound } from "@/lib/penalty-server";
+import { UPDATE_MSG } from "@/lib/version";
 
 export const runtime = "nodejs";
 
 const ID = /^[A-Z0-9]{6}$/;
 
 export async function POST(req: Request) {
+  if (staleApp(req)) return NextResponse.json({ error: UPDATE_MSG }, { status: 426 });
   const uid = await callerUid(req);
   if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;

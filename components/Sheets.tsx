@@ -3,7 +3,7 @@ import { useState } from "react";
 import { deleteField, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { inr, isDare, ruleLabel, type Group, type PenaltyMode, type Rule, type Task } from "@/lib/logic";
-import { api, authError, logOut, postFeed, toast } from "@/lib/client";
+import { api, authError, logOut, postFeed, settingsError, toast } from "@/lib/client";
 import { DARE_RULES, deckOf, isStarter, MAX_DARE, STARTER, type DareDoc } from "@/lib/dares";
 import { modeLabel } from "@/lib/feed";
 import TaskEditor, { cleanTasks, RulePicker } from "./TaskEditor";
@@ -98,7 +98,7 @@ export function SettingsSheet({ group, gid, uid, phase, onClose, onDeck }: {
         toast("Rules updated. Everyone got notified.");
       }
       onClose();
-    } catch (e) { toast(authError(e)); } finally { setBusy(false); }
+    } catch (e) { toast(settingsError(e)); } finally { setBusy(false); }
   }
 
   async function saveMode() {
@@ -113,7 +113,7 @@ export function SettingsSheet({ group, gid, uid, phase, onClose, onDeck }: {
         await postFeed(gid, { kind: "mode", mode, round: nextRound });
         toast(`${modeLabel(mode)} starts with round ${nextRound}.`);
       }
-    } catch (e) { toast(authError(e)); } finally { setBusy(false); }
+    } catch (e) { toast(settingsError(e)); } finally { setBusy(false); }
   }
 
   async function newRound() {

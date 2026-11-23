@@ -8,8 +8,34 @@ import Onboard from "./Onboard";
 import Dashboard from "./Dashboard";
 import Toasts from "./Toasts";
 import { InAppBanner } from "./Banners";
+import { APP_VERSION } from "@/lib/version";
 
 type Profile = { name?: string; groupId?: string | null };
+
+/** "cTicks was updated" bar: shown when the server expects a newer app than this open copy (checked on launch,
+ *  whenever the app comes back to the foreground, every 30 min, and when an API route answers 426). */
+function UpdateBar() {
+  const [stale, setStale] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      fetch("/api/version", { cache: "no-store" }).then((r) => r.json())
+        .then((d) => { if (Number(d.version) > APP_VERSION) setStale(true); }).catch(() => {});
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    const onStale = () => setStale(true);
+    check();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("payup-stale", onStale);
+    const t = setInterval(check, 30 * 60_000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("payup-stale", onStale); clearInterval(t); };
+  }, []);
+  if (!stale) return null;
+  return (
+    <div className="update-bar" role="alert">
+      <span><b>cTicks was updated.</b> Reload to keep going.</span>
+      <button className="btn small" onClick={() => location.reload()}>Reload</button>
+    </div>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -43,6 +69,7 @@ export default function App() {
 
   return (
     <>
+      <UpdateBar />
       <InAppBanner />
       {view}
       <Toasts />

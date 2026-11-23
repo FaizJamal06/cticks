@@ -2,7 +2,8 @@
 // approve one, or report one (it leaves the deck until someone else re-approves it). Members only.
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/admin";
-import { callerUid, feed, names, send } from "@/lib/penalty-server";
+import { callerUid, feed, names, send, staleApp } from "@/lib/penalty-server";
+import { UPDATE_MSG } from "@/lib/version";
 import { checkDare, isStarter, STARTER, type DareDoc } from "@/lib/dares";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 const err = (error: string, status: number) => NextResponse.json({ error }, { status });
 
 export async function POST(req: Request) {
+  if (staleApp(req)) return NextResponse.json({ error: UPDATE_MSG }, { status: 426 });
   const uid = await callerUid(req);
   if (!uid) return err("unauthorized", 401);
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;

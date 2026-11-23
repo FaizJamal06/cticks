@@ -11,11 +11,18 @@ import {
 import { isUnfinished, newPenalty, penaltyLedger, planKicks, step, unpaidBy, type Ctx, type Effect, type Event, type KickWhy, type Penalty, type Vote } from "./penalty";
 import { deckOf, type DareDoc } from "./dares";
 import { due, each, KICK_WHY, penaltyFeed, penaltyMsgs, type FeedItem, type Msg } from "./feed";
+import { APP_VERSION } from "./version";
 
 const db = () => adminDb();
 const rand = () => randomInt(0, 1_000_000) / 1_000_000;
 export type Fail = { ok: false; code: number; error: string };
 const fail = (code: number, error: string): Fail => ({ ok: false, code, error });
+
+/** True when the request comes from an app older than this deployment (it sends X-App-Version). Answer with 426 + UPDATE_MSG. */
+export const staleApp = (req: Request) => {
+  const v = Number(req.headers.get("x-app-version"));
+  return v > 0 && v < APP_VERSION;
+};
 
 /** The caller's uid from `Authorization: Bearer <Firebase ID token>`, or null. */
 export async function callerUid(req: Request) {
