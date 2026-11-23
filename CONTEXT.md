@@ -64,6 +64,7 @@ app/
   api/penalty/route.ts          POST: Pay or Dare actions (pay, dare, reroll, paid, done, again, vote, got, notgot)
   api/dares/route.ts            POST: dare deck (add with blocklist check, approve, report)
   api/group/route.ts            POST: start the next round (server-side, settles the outgoing round) and rejoin after a kick
+  api/version/route.ts          GET: the APP_VERSION this deployment expects (an older open app shows a Reload bar)
   api/cron/reminder/route.ts    GET (Vercel Cron 15:30 UTC ≈ 9pm IST): warn anyone about to miss today
   api/cron/results/route.ts     GET (Vercel Cron 03:30 UTC ≈ 9am IST): yesterday's misses + running total / final score
 components/
@@ -180,6 +181,7 @@ See `.env.example`. `NEXT_PUBLIC_FIREBASE_*` (6 values incl. VAPID) go to the br
 - The landing story copies the app's real push text and screens. Change one, change the other (`app/page.tsx`, `docs/WEBSITE_COPY.md`).
 - Any new write path needs a matching rule in `firestore.rules`. Rules are the real security boundary.
 - Penalty transitions live only in `lib/penalty.ts` `step()`. Add a transition there, with a test, never in a route.
+- Bump `APP_VERSION` in `lib/version.ts` in any release that changes what the app writes or which API it calls. Open copies of the older app then show "cTicks was updated. Reload", and the API routes answer them 426 "Close and reopen the app". Deploy rule changes that deny an old write path only after the new app is live in production.
 - Push and in-app text never uses gendered pronouns (the app doesn't know anyone's): "Aryaan says the dare is done", not "he did his dare".
 - Cron routes accept `?gid=CODE` (with `CRON_SECRET`) to run for one group; use it for tests on previews, which share the production Firebase project.
 

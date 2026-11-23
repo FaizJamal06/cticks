@@ -2,7 +2,7 @@
 
 _Last updated: 23 Nov 2026. Update this file whenever something gets done, tested or found broken._
 
-**State in one line:** cTicks lives at <https://cticks.vercel.app>. **Pay or Dare + eliminations** is built and end-to-end tested on the `pay-or-dare` branch (Vercel preview), waiting for Faiz's OK before it merges. Spec: [docs/PENALTIES_SPEC.md](docs/PENALTIES_SPEC.md).
+**State in one line:** cTicks lives at <https://cticks.vercel.app> with **Pay or Dare + eliminations** live (merged 23 Nov, rules phase B deployed). Existing groups stay Money only until someone switches. Next: the Pay or Dare phone test with a real friend (section 4). Spec: [docs/PENALTIES_SPEC.md](docs/PENALTIES_SPEC.md).
 
 | | |
 |---|---|
@@ -15,11 +15,12 @@ _Last updated: 23 Nov 2026. Update this file whenever something gets done, teste
 
 ## 1. Done ✅
 
-**Pay or Dare + eliminations (23 Nov 2026, branch `pay-or-dare`, preview only, not merged)**
+**Pay or Dare + eliminations (23 Nov 2026, merged to `main` at `c93714c`, live)**
 - [x] Spec approved with 17 changes to the original rules (docs/PENALTIES_SPEC.md section 0), e.g. the 48h is to *act*, a second rejection means you must pay (not an instant kick), rejected only if more than half of all voters say ❌, deadlines at 9am, no netting
 - [x] Pure state machine `lib/penalty.ts` (`step()` for every transition, `tally`, `planKicks`, `penaltyLedger`), dare deck `lib/dares.ts` (25 starter dares, blocklist, pick), 9am deadline helpers + misses-in-a-row in `lib/logic.ts`
 - [x] Server: `/api/penalty`, `/api/dares`, `/api/group` (round start + rejoin) and the 9am check in `lib/penalty-server.ts` (create penalties with a 4-day catch-up, tally closed votes, auto-confirm payments, kick on timeout / unpaid / 3 in a row, never empty a group, end the round with a winner). Cron routes take `?gid=` for tests
-- [x] Rules phase A **deployed to production** (additive, so the app on main still works): penalties/votes/dares read-only for members, server-only group fields, kicked players can't rejoin client-side. Phase B (narrower member writes, round start server-only) waits for the merge
+- [x] Rules deployed in two phases. A (before the merge, additive): penalties/votes/dares read-only for members, server-only group fields, kicked players can't rejoin client-side. B (after the production deploy): members may change only `stake`, `rule` and `next` (in Pay or Dare groups only `next`); starting a round is server-only (`/api/group`)
+- [x] App version check: `lib/version.ts` `APP_VERSION` (now 2) + `/api/version`. The app shows a "cTicks was updated. Reload" bar when the server is newer; the API routes answer 426 "Close and reopen the app" to an older app; a denied Settings write shows the same text. Bump `APP_VERSION` in any release that changes write paths
 - [x] UI: penalty card in every state with the dare spin, vote card (reasons), confirm-payment card, Pay or Dare money card (unpaid per pair, no netting), grid 🎭 / "?" / kicked rows, "You're out" screen with Rejoin, penalty mode setting (next round only), dare deck sheet; new groups default to Pay or Dare
 - [x] Landing: miss beat (penalty push + card + dare), final beat without netting, 5 new FAQ answers; WEBSITE_COPY, CONTEXT, USER_FLOW and BRAND updated
 - [x] Preview env: the 8 env vars copied to Vercel Preview; a Protection Bypass for Automation secret lives in `.env.local` only
@@ -118,6 +119,10 @@ _Last updated: 23 Nov 2026. Update this file whenever something gets done, teste
 | Pay or Dare logic | `npm test`: 53 new tests (every transition and guard in the spec, ties, no votes, retry, second rejection, payments, 3 in a row across a round boundary and with a gap, a group shrinking to 1 and to 0, ledger, deck, blocklist, push text never gendered) | ✅ 59/59 |
 | Pay or Dare rules | `npm run test:rules`: 12 new tests (members read, nobody writes penalties/votes/dares from the client, server-only fields, valid `next`, kicked can't rejoin client-side, kicked loses access). Each new rule loosened on purpose fails at least one test | ✅ 59/59 |
 | Pay or Dare end to end | Preview deploy, 3 throwaway accounts, 2 test groups, real UI + real API with ID tokens; deadlines moved into the past with the admin SDK, cron called with `?gid=` only. (1) miss → dare → reroll → Done → 2 ✅ → passed; (2) miss → dare → ❌❌ → retry → ❌❌ → must pay → deadline → kicked, owes ₹200; (3) miss → Pay → I paid → both payees confirmed; (4) 3 misses in a row → kicked → group of 1 → round ended early, winner. Also: rejoin refused in the same round and accepted in round 2; re-running the check changes nothing; can't vote on your own dare; no dare once locked; deck permissions; blocklist refuses unsafe dares. Test data deleted afterwards | ✅ |
+| Rules phase B | `npm run test:rules` 63/63 (4 new: no direct round start and the doc stays unchanged, Pay or Dare stake/rule only via `next`). Each new rule loosened on purpose fails at least one test | ✅ 63/63 |
+| Production rules after the deploy | The ruleset Firestore serves, fetched through the Rules API, is byte-for-byte `firestore.rules`. Then live in production with the client SDK, 2 throwaway accounts and a throwaway group (deleted after): old app creates a group, joins, saves rules in a Money only group → allowed; old app starts a round directly → denied and the group is unchanged; new app queues `next` → allowed; mode / kicked / penalty / dare writes → denied; Pay or Dare group: direct stake change denied, `next` allowed | ✅ 12/12 |
+| Production after the merge | Real browser on cticks.vercel.app: landing (thread, no horizontal scroll, no Vercel toolbar), `/app`, a real sign-in, new challenges default to Pay or Dare, no console errors. The round button in preview screenshots is Vercel's preview-only feedback toolbar (`vercel-live-feedback`); production has none | ✅ |
+| Real groups untouched | Read-only snapshot before the merge and after the deploy: both groups still Money only, same round, members, ticks digest and money card, no penalty or dare docs | ✅ identical |
 | Pay or Dare worst case (break-ui) | 6 members with 24-char, Arabic and emoji names, ₹1,00,000 stake, 120-char dares, 80-char notes, 5 open penalties + 2 votes + 2 confirmations, a kicked player's debt; 320 and 390px | ✅ after fixes: buttons stack instead of wrapping 3 lines, voter names no longer squeezed, names isolated with `<bdi>`; no horizontal scroll, no console errors |
 | New domain cticks.vercel.app (21 Nov) | curl + headless Chrome after deploy `c369cce`: `/`, `/app`, invite 200; og:image `https://cticks.vercel.app/og.png`; manifest `cTicks`, id `/`, start_url `/app`; service worker 200 with the `payup-c1ee8` config and `openWindow('/app')`; both crons 401 with no or a wrong secret; `/api/notify` 401; `/app` registers the SW on the new origin, no console errors. The authorised cron call was skipped because it would have pushed to the 3 real players | ✅ |
 | Old domain redirect | `payup-xi.vercel.app/?join=K7XQ2M&from=Shanayaa`, `/app`, `/login?join=…`, the SW: all 308 to the same path + query on cticks.vercel.app; in Chrome the old invite link shows the card with "Shanayaa" and code `K7XQ2M` | ✅ |
@@ -126,9 +131,10 @@ _Last updated: 23 Nov 2026. Update this file whenever something gets done, teste
 
 ## 3. Not tested yet ⚠️ (needs real phones)
 
-- [ ] Pay or Dare pushes on real phones (penalty, spin, Done, result, I paid, kick); test accounts had no devices, so `sent: 0` in the end-to-end run
-- [ ] The real 9am cron creating penalties in production (only after the merge, and only for groups switched to Pay or Dare)
-- [ ] "Share dare" through the iPhone and Android share sheets; the spin animation on a real phone
+- [ ] **Pay or Dare pushes on real phones**: penalty created, dare spun, "says the dare is done", vote result, retry, "says you've been paid", got it / didn't arrive, 2-in-a-row warning, kicked. Test accounts had no devices, so every push in the end-to-end run was `sent: 0`
+- [ ] **Share dare** from the iPhone and Android share sheets (and the copy fallback); the spin animation on a real phone
+- [ ] **The real 9am run** creating penalties and closing votes in production (it only touches groups in Pay or Dare mode)
+- [ ] The "cTicks was updated" Reload bar on a phone (shows the next time `APP_VERSION` is bumped)
 
 - [ ] Install + push on **Android Chrome** (installed) and **iPhone home-screen app** (iOS 16.4+)
 - [ ] The "Turn on notifications" **tap** itself (in automated runs permission was pre-granted)
@@ -157,7 +163,24 @@ _Last updated: 23 Nov 2026. Update this file whenever something gets done, teste
 
 ## 4. To do: your next steps 📋
 
-**Pay or Dare:** review the preview and screenshots → OK → merge to `main` → deploy rules phase B → check production. Existing groups stay Money only; switch yours in Settings → Penalty mode (it starts with your next round).
+**Pay or Dare phone test (with a real friend: ~15 minutes, plus waiting for midnight):** a throwaway group, so your real group isn't touched.
+1. [ ] Both phones: close and reopen cTicks so it runs the new version; notifications on. Note your real group's code (bottom of the dashboard)
+2. [ ] Tick today's tasks in your real group first
+3. [ ] Faiz: Settings → Switch challenge → Start a challenge: stake ₹10, 7 days, **Starts Today**, **Pay or Dare**, one task "Test" → share the code
+4. [ ] Friend: Settings → Switch challenge → Join with code → one task. Faiz gets "joined"
+5. [ ] Both: leave "Test" unticked today (that's the miss). Optional: fire the 9pm reminder for this group → both get "⏰ Clock's ticking … it's pay ₹10 or a dare"
+6. [ ] Any time after midnight IST: fire the 9am check for this group (command below) → both get "💸 You missed yesterday. Pay ₹10 or take a dare."
+7. [ ] Faiz: Take a dare → the spin → friend gets "🎲 Faiz's dare: …" → Share dare (share sheet) → do it, send it on WhatsApp → Done, I sent the proof → friend gets "🎭 Faiz says the dare is done"
+8. [ ] Friend: ❌ with a reason → Faiz gets "❌ Your dare didn't pass" → Faiz: Sent it again → friend: ✅ → both get "✅ Faiz's dare passed"
+9. [ ] Friend: Pay ₹10 → pay on UPI (or pretend) → I paid → Faiz gets "💸 … says you've been paid ₹10" → Faiz: Didn't get it → friend gets "🤨 … didn't arrive" → friend: Mark paid again → Faiz: Got it → friend gets "✅ Faiz got your ₹10"
+10. [ ] Grid: 🎭 for Faiz, ✗ for the friend. Tap a notification → the app opens
+11. [ ] Both: Switch challenge → Join with code → your real group's code. Send me the test group's code and I'll delete it (otherwise the real 9am run keeps processing it)
+
+Fire a cron for one group only (from the repo folder; the secret is read from `.env.local`, never typed or printed):
+- bash: `curl -s -H "Authorization: Bearer $(grep '^CRON_SECRET=' .env.local | cut -d= -f2-)" "https://cticks.vercel.app/api/cron/results?gid=CODE"` (`/api/cron/reminder?gid=CODE` for the 9pm one)
+- PowerShell: `$s = (Select-String '^CRON_SECRET=' .env.local).Line.Split('=',2)[1]; curl.exe -s -H "Authorization: Bearer $s" "https://cticks.vercel.app/api/cron/results?gid=CODE"`
+
+Existing groups stay Money only; switch yours in Settings → Penalty mode (it starts with your next round).
 
 **Setup:** done (Firebase project, rules, auth, FCM, Vercel, env, authorized domain).
 - [x] Firebase Auth → Authorized domains: `cticks.vercel.app` and the `pay-or-dare` preview domain added (22 Nov)
@@ -222,6 +245,7 @@ Then one of you ticks a task and the other should get the push once. Expect the 
 - **Local Node is 22** on the dev laptop; firebase 13 wants ≥24.12. Everything passes on 22 with engine warnings; Vercel and CI use 24.
 - **`npm audit`** flags `@grpc/grpc-js` under firebase; the only "fix" is downgrading firebase.
 
+- **An app that was open before a release keeps its old code until it's reopened.** There's no offline cache (the service worker only does pushes), so any launch loads the new code. A copy left open across the Pay or Dare release that tries to start a round is denied by the rules and shows its old generic "Not allowed" message once; nothing is written. From this release on, the Reload bar and the 426 answer cover it.
 - **Pay or Dare deadlines are enforced by the 9am cron** (Vercel Hobby fires within the hour). The server refuses actions after a deadline even before the check runs, so the consequence can land up to an hour after 9am.
 - **In a 2-person Pay or Dare group the only voter decides.** A second rejection only forces paying (never a direct kick), so the worst a hostile voter can do is make you pay the normal stake.
 - **The dare blocklist is a word list**, not moderation. The real safeguards are a second member's OK and the report button.
